@@ -153,12 +153,29 @@ def clean_example(av, ru):
     if len(toks) < 2 or len(toks[0]) < 2: return None         # truncated (e.g. "б анищ")
     if not (6 <= len(av) <= 40): return None
     return (av, ru, len(av))
-EX = {}
+EX = {}          # eid -> [(av, ru, len), ...] shortest-first
 for eid, av, ru in cur.execute("SELECT entry_id, av, ru FROM examples WHERE av IS NOT NULL AND ru IS NOT NULL"):
     e = clean_example(av, ru)
     if not e: continue
-    if eid not in EX or e[2] < EX[eid][2]:
-        EX[eid] = e
+    EX.setdefault(eid, []).append(e)
+for eid in EX: EX[eid].sort(key=lambda e: e[2])
+_STOP = set("и в во на о об с к по за из у не что как для от до а но или это тебя его её их "
+            "так все весь чем чём кого кому кто где чего либо кем чему бы же ли ни".split())
+def _stems(text):
+    import re as _re
+    return {w[:4] for w in _re.findall(r"[а-яёӀ]+", (text or "").lower()) if len(w) >= 4 and w not in _STOP}
+def pick_example(eid, ru=None):
+    """From an entry's examples, prefer one whose gloss ACTUALLY illustrates the target
+    meaning `ru` (shares a word-stem), so we don't show an idiom for a different sense
+    (лицо→гьумер picked 'небеса'); fall back to the shortest."""
+    exs = EX.get(eid)
+    if not exs: return None
+    if ru:
+        want = _stems(ru)
+        if want:
+            for av, rg, ln in exs:                       # already shortest-first
+                if _stems(rg) & want: return (av, rg, ln)
+    return exs[0]
 
 def eids_for(av, ru=None):
     """Entry ids for headword `av`, ORDERED so the homonym whose senses match the
@@ -186,7 +203,7 @@ def forms_of(av, ru=None):
     return None
 def example_of(av, ru=None):
     for eid in eids_for(av, ru):
-        e = EX.get(eid)
+        e = pick_example(eid, ru)
         if e: return {"av": e[0], "ru": e[1]}
     return None
 def alt_obj(av, ru=None):  # a synonym carrying an example for THIS meaning
@@ -465,9 +482,9 @@ for eid, fr in sorted(LEMMA_FREQ.items(), key=lambda x: -x[1]):   # common entri
     e = {}
     fm = ENTRY_FORMS.get(eid)
     if fm and len(fm) > 1: e["forms"] = [normpal(x) for x in fm[:6]]
-    ex = EX.get(eid)
-    if ex: e["ex"] = {"av": normpal(ex[0]), "ru": ex[1]}
     fs = FIRSTSENSE.get(eid)
+    ex = pick_example(eid, fs[1] if fs else None)
+    if ex: e["ex"] = {"av": normpal(ex[0]), "ru": ex[1]}
     if fs:
         terms = gloss_terms(fs[1])
         if terms:
