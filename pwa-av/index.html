@@ -455,6 +455,7 @@ function renderHome(){
    ${weak.length?`<div class="hd"><span class="n">!</span><b>Слабые места</b></div>
      ${weak.map(w=>`<div class="lesson" onclick="drillJump('${esc(w.k)}','${esc(w.label)}')">
        <div class="badge">🎯</div><div class="lt"><b>${esc(w.label)}</b><small>ошибок: ${w.miss}</small></div><div class="arrow">↻</div></div>`).join('')}`:''}
+   ${installHTML()}
    <div class="card tight"><small>Карточек изучено: <b>${learned}</b> · слов в курсе: <b>${allVocab().length}</b></small>
      <div style="margin-top:8px"><button class="btn ghost sm" onclick="resetAll()">Сбросить прогресс</button></div></div>`;
 }
@@ -727,12 +728,42 @@ function gramHTML(){return `
     Дун ине, Дой ине. А «приходить» — с показателем: вачӀине / йачӀине / бачӀине.</div>`;
 }
 
+/* ---------------- install / platform ---------------- */
+function platform(){
+  const ua=(navigator.userAgent||'');
+  if(/iphone|ipad|ipod/i.test(ua) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)) return 'ios';
+  if(/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+function isStandalone(){
+  return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+}
+let deferredPrompt=null;
+if(window.addEventListener) window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;
+  const b=$('installBtn'); if(b)b.style.display='';});
+function doInstall(){ if(deferredPrompt){deferredPrompt.prompt();
+  if(deferredPrompt.userChoice)deferredPrompt.userChoice.finally(()=>{deferredPrompt=null;renderHome();}); } }
+function installHTML(){
+  if(isStandalone()) return '';
+  const p=platform();
+  if(p==='ios') return `<div class="callout b" style="text-align:left"><b>📲 Установить как приложение (iPhone / iPad):</b>
+    <div style="margin-top:4px">1. Нажми <b>Поделиться</b> <span style="font-size:1.1em">􀈂</span> (квадрат со стрелкой ⬆️, внизу Safari).<br>
+    2. Пролистай и выбери <b>«На экран «Домой»»</b>.<br>
+    3. Нажми <b>«Добавить»</b> — иконка появится на рабочем столе!</div></div>`;
+  if(p==='android') return `<div class="callout b" style="text-align:left"><b>📲 Установить как приложение (Android):</b>
+    <div style="margin-top:4px">Нажми кнопку ниже, либо меню <b>⋮</b> в Chrome → <b>«Установить приложение»</b> (или «Добавить на главный экран»).</div>
+    <button class="btn grn" id="installBtn" style="margin-top:8px;display:${deferredPrompt?'':'none'}" onclick="doInstall()">📲 Установить</button></div>`;
+  return `<div class="callout b" style="text-align:left"><b>📲 Установить на компьютер:</b>
+    <div style="margin-top:4px">Нажми значок установки <b>⊕</b> в адресной строке браузера (или меню → «Установить приложение…»).</div>
+    <button class="btn grn" id="installBtn" style="margin-top:8px;display:${deferredPrompt?'':'none'}" onclick="doInstall()">📲 Установить</button></div>`;
+}
+
 /* ---------------- onboarding ---------------- */
 function maybeOnboard(){
   if(S.onboarded)return;
   const o=document.createElement('div'); o.id='onb';
-  o.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(8,11,17,.92);display:flex;align-items:center;justify-content:center;padding:18px';
-  o.innerHTML=`<div class="card" style="max-width:360px;text-align:center;margin:0">
+  o.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(8,11,17,.92);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow-y:auto';
+  o.innerHTML=`<div class="card" style="max-width:380px;text-align:center;margin:auto">
     <div style="font-size:2.4rem">🏔️</div>
     <h2>ВорчӀами! Добро пожаловать</h2>
     <p class="lead">Это курс аварского для русскоговорящих. Ты заговоришь с первого урока.</p>
@@ -742,8 +773,9 @@ function maybeOnboard(){
       <button class="btn" onclick="pickGender('m')">♂ Я парень</button>
       <button class="btn blue" onclick="pickGender('f')">♀ Я девушка</button>
     </div>
-    <p class="note" style="margin-top:10px">Поменять можно в любой момент — кнопка «Я» вверху справа.
-      А кнопка «Произн.» покажет произношение [IPA] у всех слов.</p></div>`;
+    ${installHTML()}
+    <p class="note" style="margin-top:10px">Пол можно поменять кнопкой «Я» вверху справа.
+      Кнопка «Произн.» покажет произношение [IPA] у всех слов.</p></div>`;
   document.body.appendChild(o);
 }
 function pickGender(g){S.gender=g;S.onboarded=true;save();applyToggles();const o=$('onb');if(o&&o.remove)o.remove();renderAll();}
