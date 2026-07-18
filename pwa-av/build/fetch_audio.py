@@ -101,7 +101,7 @@ for letter, slug, ipa, cands in LETTERS:
     if os.path.exists(mp3done) and os.path.getsize(mp3done) > 500:
         manifest[letter] = {"file": "audio/" + slug + ".mp3", "ipa": ipa, "src": cands[0]}
         print(f"skip {letter} (exists)", file=sys.stderr); continue
-    time.sleep(3)  # pace per-letter to avoid sustained rate limiting
+    time.sleep(10)  # pace per-letter to avoid sustained rate limiting
     got = None
     src_title = None
     for title in cands:
@@ -114,7 +114,7 @@ for letter, slug, ipa, cands in LETTERS:
     if not got:
         print(f"MISSING {letter} ({ipa}) tried {cands}", file=sys.stderr)
         missing.append(letter); continue
-    time.sleep(1.2)  # space out download requests
+    time.sleep(4)  # space out download requests
     ext = os.path.splitext(got)[1].lower() or ".ogg"
     tmp = os.path.join(AUDIO, "_tmp" + ext)
     mp3 = os.path.join(AUDIO, slug + ".mp3")
