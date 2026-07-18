@@ -50,6 +50,9 @@ OVER = {
  "особенно":"хасго","рядом":"аскӀо","плечо":"гъеж",
  "становиться":"лъугьине","единство":"цолъи","цена":"багьа","голос":"гьаракь","древний":"некӀсияб","крик":"ахӀи","лист":"тӀамах",
  "шум":"сас","страсть":"гӀишкъу","местный":"гьанисеб",
+ # verified homonym/sense corrections (broad freq had picked a wrong-sense word):
+ "смерть":"хвел","школа":"мактаб","основа":"кьучӀ","знак":"ишара",
+ "условие":"шартӀ","внимание":"хал","цвет":"кьер",
 }
 # supplement (AV-frequency) words to skip: directional/redundant forms
 SUPP_DROP = {"цебеса"}
@@ -57,7 +60,7 @@ SUPP_DROP = {"цебеса"}
 MANUAL = {"внутри": "жаниб"}
 # russian words to drop from the deck (loanwords / no clean single-word native equivalent)
 DROP = {"московский","момент","советский","русский","коммунизм","социализм",
-        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер","принимать"}
+        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер","принимать","срок","труба"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -252,11 +255,23 @@ def valid_sense(av, ru):
 
 def score_av(av, ru):
     """Among words that genuinely mean `ru`, the EVERYDAY one = the most FREQUENT.
-    Frequency is the primary signal; small bonus if ru is the word's primary meaning."""
+    Frequency is the primary signal; a word whose PRIMARY meaning is `ru` is strongly
+    preferred over one where `ru` is a secondary sense — because for a secondary sense the
+    broad corpus frequency is a LIE: it counts the word's dominant OTHER meaning, not this
+    one (e.g. иргадулаб wf=251 is all 'очередной', its sense-2 'смерть' is near-zero; so it
+    must not out-rank хвел for 'смерть'). Known everyday-secondary picks (шум→сас) use OVER."""
     ok, primary = valid_sense(av, ru)
     if not ok: return None
-    if everyday_freq(av) < EVERYDAY_MIN: return None       # reject news-only formal words
-    return word_freq(av) + (4 if primary else 0) - max(0, len(av) - 10) * 0.3
+    ev = everyday_freq(av)
+    if ev < EVERYDAY_MIN: return None                      # reject news-only formal words
+    wf = word_freq(av)
+    if not primary:
+        # secondary-sense homonym: broad corpus freq measures the word's DOMINANT OTHER
+        # meaning, not this one, so it must not out-rank a word whose PRIMARY sense is `ru`.
+        # Cap the frequency signal, but keep it mild so real everyday secondaries survive
+        # (verified homonym picks like шум→сас are pinned in OVER anyway).
+        wf = min(wf, max(ev, 30))
+    return wf + (4 if primary else 0) - max(0, len(av) - 10) * 0.3
 
 def best_avar(ru_word, cands):
     """returns (primary_av, [alt_av...]) — common native words for ru_word, or (None, [])."""
@@ -306,8 +321,8 @@ for pos, fn in FILES:
         av, alts = best_avar(ru, cands)
         if not av: continue
         av = normpal(av)
-        if k(av) in seen_av: continue
-        seen_av.add(k(av))
+        if kp(av) in seen_av: continue     # palochka-PRESERVING: хал(внимание) ≠ хӀал(состояние)
+        seen_av.add(kp(av))
         entry = {"ru": ru, "av": av, "pos": pos}
         alts = alts[:2]
         if alts: entry["alts"] = alts
@@ -411,6 +426,14 @@ for key, fr in sorted(HK_FREQ.items(), key=lambda x: -x[1]):
 print(f"supplement (frequent corpus words, meaning-deduped): +{len(supp)}")
 deck = deck + supp
 
+if os.environ.get("AUDIT"):
+    with open(os.path.join(HERE, "audit.tsv"), "w", encoding="utf-8") as af:
+        af.write("i\tru\tav\tpos\tev\twf\texample\tsenses\n")
+        for i, w in enumerate(deck):
+            av = w["av"]; ex = w.get("ex")
+            af.write(f"{i}\t{w['ru']}\t{av}\t{w['pos']}\t{everyday_freq(av)}\t{word_freq(av)}\t"
+                     f"{(ex['av']+' = '+ex['ru']) if ex else ''}\t{' | '.join(w.get('senses',[]))}\n")
+    print("wrote audit.tsv")
 n = len(deck)
 levels = [
     {"id": "l1", "title": "⭐ Топ-250", "words": deck[:250]},
