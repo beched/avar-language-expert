@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#10161f">
+<title>Аварский за час — говорим сразу</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#10161f;--bg2:#161f2c;--card:#1a2433;--card2:#212d3f;
+  --ink:#eef4fb;--muted:#93a4bd;--line:#2b384c;
+  --red:#ef5466;--grn:#33c67d;--gold:#f3b13a;--blue:#57a8ff;--purp:#a78bfa;
+  --av:#ffffff;--ipa:#8fe3b0;--radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;line-height:1.5;padding-bottom:92px}
+a{color:var(--blue)}
+h1,h2,h3{line-height:1.2;margin:0 0 .4em}
+h2{font-size:1.25rem}h3{font-size:1.02rem;color:var(--gold)}
+p{margin:.5em 0}small,.note{color:var(--muted);font-size:.82rem}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+
+header{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);
+  background:rgba(16,22,31,.86);border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 0 8px}
+.hrow{display:flex;align-items:center;gap:10px}
+.logo{font-size:1.6rem;line-height:1}
+.brand b{font-size:.98rem}.brand small{display:block;font-size:.64rem;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.toggles{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tg{font-size:.72rem;border:1px solid var(--line);background:var(--card);color:var(--muted);
+  border-radius:999px;padding:5px 9px;cursor:pointer;user-select:none;white-space:nowrap}
+.tg b{color:var(--ink)}.tg.on{border-color:var(--grn)}.tg.on b{color:var(--ipa)}
+
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:40;display:flex;
+  background:rgba(19,26,38,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;background:none;border:none;color:var(--muted);font-size:.6rem;
+  padding:9px 2px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+nav.tabs .ic{font-size:1.15rem;line-height:1}
+nav.tabs button.on{color:var(--ink);position:relative}
+nav.tabs button.on::after{content:"";position:absolute;top:0;width:26px;height:3px;border-radius:3px;background:var(--red)}
+
+section.view{display:none;padding:16px 0 10px}
+section.view.on{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.av{color:var(--av);font-weight:600}
+.ipa{color:var(--ipa);font-style:italic;font-size:.9rem}
+.az{color:var(--muted);font-size:.85rem}
+.hide-ipa .ipa{display:none!important}
+.vguide{width:100%;border-collapse:collapse;font-size:.9rem;margin:8px 0}
+.vguide td{border:1px solid var(--line);padding:6px 9px;vertical-align:middle}
+.vguide .v{color:var(--gold);font-weight:700}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin:12px 0}
+.card.tight{padding:11px 13px}.card h3:first-child{margin-top:0}
+.hd{display:flex;align-items:center;gap:8px;margin:22px 0 6px}
+.hd .n{font-size:.72rem;color:var(--bg);background:var(--gold);border-radius:6px;padding:2px 7px;font-weight:700}
+.lead{color:var(--muted);font-size:.94rem;margin:.2em 0 .8em}
+
+.rowlist{display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);padding:9px 12px}
+.row .l{min-width:0}.row .ru{font-size:.9rem}.row .ipa{font-size:.8rem}
+.row .av{font-size:1.2rem;text-align:right}
+.row.head{background:var(--card2);color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.5px}
+.tag{display:inline-block;font-size:.62rem;padding:1px 6px;border-radius:5px;background:var(--card2);color:var(--muted);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip{font-size:.8rem;border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--red);border-color:var(--red);color:#fff}
+.chip.g.on{background:var(--grn);border-color:var(--grn)}
+.chip.b.on{background:var(--blue);border-color:var(--blue);color:#04203f}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--red);color:#fff;
+  border:none;border-radius:12px;padding:12px 16px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.btn.grn{background:var(--grn);color:#052}.btn.gold{background:var(--gold);color:#20160a}
+.btn.blk{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.btn.blue{background:var(--blue);color:#04203f}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.4}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}.btnrow .btn{flex:1;min-width:110px}
+.btn.sm{padding:8px 12px;font-size:.82rem;border-radius:10px}
+.play{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;
+  background:var(--blue);color:#04203f;border:none;font-size:.95rem;cursor:pointer;flex:none}
+.play:active{transform:scale(.9)}.play.off{background:var(--card2);color:var(--muted);cursor:default}
+
+.callout{border-left:3px solid var(--line);background:var(--card2);border-radius:0 10px 10px 0;padding:9px 12px;margin:10px 0;font-size:.9rem}
+.callout.g{border-color:var(--grn)}.callout.b{border-color:var(--blue)}.callout.r{border-color:var(--red)}
+
+.prog{height:9px;background:var(--card2);border-radius:6px;overflow:hidden;margin:6px 0}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,var(--grn),var(--blue));width:0}
+.tiles{display:flex;gap:8px;margin:10px 0}
+.tile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.tile b{display:block;font-size:1.4rem;color:var(--gold)}.tile small{font-size:.66rem}
+
+.lesson{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);
+  border-radius:13px;padding:11px 13px;margin:8px 0;cursor:pointer}
+.lesson .badge{width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:1.1rem;flex:none}
+.lesson.done .badge{background:var(--grn);color:#052}.lesson.started .badge{background:var(--gold);color:#20160a}
+.lesson .lt{flex:1;min-width:0}.lesson .lt b{font-size:.98rem}.lesson .lt small{display:block;color:var(--muted);font-size:.76rem}
+.lesson .arrow{color:var(--muted)}
+.back{color:var(--muted);cursor:pointer;font-size:.85rem;display:inline-block;margin:2px 0 6px}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 15px;margin:10px 0;text-align:center;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.stage .tasktag{font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.stage .prompt{font-size:1.35rem;font-weight:600}
+.stage .ans{font-size:1.5rem;color:var(--ipa)}
+.stage .ansru{color:var(--muted);font-size:.95rem}
+.grade{display:none;gap:8px;margin-top:4px}.grade.on{display:flex}
+.opt{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:12px 14px;margin:6px 0;font-size:1rem;cursor:pointer;font-family:inherit}
+.opt.correct{background:var(--grn);color:#052;border-color:var(--grn)}
+.opt.wrong{background:var(--red);color:#fff;border-color:var(--red)}
+.feedback{margin:6px 0;font-weight:600}.feedback.ok{color:var(--grn)}.feedback.no{color:var(--red)}
+
+.flash{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:34px 16px;margin:10px 0;text-align:center;min-height:160px;display:flex;flex-direction:column;justify-content:center;gap:8px;cursor:pointer}
+.flash .kind{font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.flash .big{font-size:1.9rem;font-weight:700}
+.flash .tap{color:var(--muted);font-size:.8rem;margin-top:6px}
+.flash .divider{border-top:1px dashed var(--line);margin:10px 0 4px;padding-top:10px}
+
+input[type=text]{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+  border-radius:12px;padding:12px 14px;font-size:1rem;font-family:inherit}
+input:focus{outline:none;border-color:var(--blue)}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 12px;margin:8px 0}
+summary{cursor:pointer;padding:8px 0;font-weight:600}
+.subtabs{display:flex;gap:6px;overflow-x:auto;margin:2px 0 10px;-webkit-overflow-scrolling:touch}
+.subtabs button{white-space:nowrap;background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.subtabs button.on{background:var(--blue);color:#04203f;border-color:var(--blue)}
+.letter{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin:6px 0}
+.letter .big{font-size:1.5rem;font-weight:700;min-width:56px}
+.letter .li{flex:1;min-width:0}.letter .li .ipa{font-family:ui-monospace,monospace}
+.letter .ex{color:var(--muted);font-size:.82rem}
+</style>
+</head>
+<body>
+<header><div class="wrap hrow">
+  <div class="logo">🏔️</div>
+  <div class="brand"><b>Аварский за час</b><small>Магӏарул мацӀ · для русскоговорящих</small></div>
+  <div class="toggles">
+    <span class="tg on" id="tgIpa" onclick="toggleIpa()">Произн. <b id="ipaState">ON</b></span>
+    <span class="tg" id="tgGen" onclick="toggleGender()">Я <b id="genState">♂ м</b></span>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <section class="view on" id="v-home"></section>
+  <section class="view" id="v-lessons"></section>
+  <section class="view" id="v-drill"></section>
+  <section class="view" id="v-cards"></section>
+  <section class="view" id="v-ref"></section>
+</main>
+
+<nav class="tabs">
+  <button class="on" data-v="home" onclick="go('home')"><span class="ic">🏠</span>Дом</button>
+  <button data-v="lessons" onclick="go('lessons')"><span class="ic">📘</span>Дарсал</button>
+  <button data-v="drill" onclick="go('drill')"><span class="ic">🔁</span>Гьунар</button>
+  <button data-v="cards" onclick="go('cards')"><span class="ic">🎴</span>Карталъ</button>
+  <button data-v="ref" onclick="go('ref')"><span class="ic">📚</span>Справка</button>
+</nav>
+
+<script id="appdata" type="application/json">{"pools": {"I": [{"av": "вас", "ru": "мальчик"}, {"av": "эмен", "ru": "папа"}, {"av": "вац", "ru": "брат"}, {"av": "кӀудада", "ru": "дедушка"}, {"av": "бихьинчи", "ru": "мужчина"}, {"av": "гьудул", "ru": "друг"}], "II": [{"av": "яс", "ru": "девочка"}, {"av": "эбел", "ru": "мама"}, {"av": "яц", "ru": "сестра"}, {"av": "кӀодо", "ru": "бабушка"}], "III": [{"av": "чу", "ru": "лошадь"}, {"av": "рукъ", "ru": "дом"}, {"av": "тӀехь", "ru": "книга"}, {"av": "къалам", "ru": "ручка"}, {"av": "гӀеч", "ru": "яблоко"}, {"av": "чед", "ru": "хлеб"}, {"av": "гӀака", "ru": "корова"}, {"av": "бер", "ru": "глаз"}, {"av": "цӀар", "ru": "имя"}, {"av": "кету", "ru": "кошка"}, {"av": "гьой", "ru": "собака"}, {"av": "тӀегь", "ru": "цветок"}], "adj": [{"av": "лъикӀаб", "ru": "хороший"}, {"av": "кӀудияб", "ru": "большой"}, {"av": "гьитӀинаб", "ru": "маленький"}, {"av": "цӀияб", "ru": "новый"}, {"av": "берцинаб", "ru": "красивый"}, {"av": "багӀараб", "ru": "красный"}, {"av": "хъахӀаб", "ru": "белый"}, {"av": "чӀегӀераб", "ru": "чёрный"}, {"av": "гӀурччинаб", "ru": "зелёный"}]}, "alphabet": [{"L": "А а", "ipa": "a", "hint": "как русское а", "ex": "ака (мама-детск.)", "exru": null, "audio": "audio/a.mp3"}, {"L": "Б б", "ipa": "b", "hint": "б", "ex": "бер", "exru": "глаз", "audio": null}, {"L": "В в", "ipa": "w", "hint": "как англ. w / краткое у", "ex": "вас", "exru": "мальчик", "audio": null}, {"L": "Г г", "ipa": "ɡ", "hint": "г", "ex": "гени", "exru": "груша", "audio": "audio/g.mp3"}, {"L": "Д д", "ipa": "d", "hint": "д", "ex": "дир", "exru": "мой", "audio": "audio/d.mp3"}, {"L": "Е е", "ipa": "e / je", "hint": "е", "ex": "эбел", "exru": "мама", "audio": "audio/e.mp3"}, {"L": "Ж ж", "ipa": "ʒ", "hint": "ж", "ex": "жо", "exru": "вещь", "audio": null}, {"L": "З з", "ipa": "z", "hint": "з", "ex": "зоб", "exru": "небо", "audio": null}, {"L": "И и", "ipa": "i", "hint": "и", "ex": "ине", "exru": "идти", "audio": "audio/i.mp3"}, {"L": "Й й", "ipa": "j", "hint": "й", "ex": "яс", "exru": "девочка", "audio": null}, {"L": "К к", "ipa": "k", "hint": "к", "ex": "квер", "exru": "рука", "audio": null}, {"L": "Л л", "ipa": "l", "hint": "л", "ex": "лъим", "exru": "вода", "audio": null}, {"L": "М м", "ipa": "m", "hint": "м", "ex": "мегӀер", "exru": "гора/нос", "audio": null}, {"L": "Н н", "ipa": "n", "hint": "н", "ex": "нах", "exru": "масло", "audio": null}, {"L": "О о", "ipa": "o", "hint": "о", "ex": "оц", "exru": "бык", "audio": null}, {"L": "П п", "ipa": "p", "hint": "п (в заимств.)", "ex": "парта", "exru": "парта", "audio": null}, {"L": "Р р", "ipa": "r", "hint": "р", "ex": "рукъ", "exru": "дом", "audio": null}, {"L": "С с", "ipa": "s", "hint": "с", "ex": "сордо", "exru": "ночь", "audio": null}, {"L": "Т т", "ipa": "t", "hint": "т", "ex": "тӀехь", "exru": "книга", "audio": null}, {"L": "У у", "ipa": "u", "hint": "у", "ex": "устар", "exru": "мастер", "audio": null}, {"L": "Х х", "ipa": "χ", "hint": "хриплое х (глубоко в горле)", "ex": "хур", "exru": "поле", "audio": null}, {"L": "Ц ц", "ipa": "t͡s", "hint": "ц", "ex": "цӀар", "exru": "имя", "audio": null}, {"L": "Ч ч", "ipa": "t͡ʃ", "hint": "ч", "ex": "чед", "exru": "хлеб", "audio": null}, {"L": "Ш ш", "ipa": "ʃ", "hint": "ш", "ex": "школа", "exru": "школа", "audio": null}, {"L": "Щ щ", "ipa": "ʃː", "hint": "долгое щ", "ex": "щиб", "exru": "что", "audio": null}, {"L": "Ъ ъ", "ipa": "ʔ", "hint": "гортанная смычка (пауза)", "ex": "гӀаъ", "exru": "крик", "audio": null}, {"L": "Э э", "ipa": "e", "hint": "э", "ex": "эмен", "exru": "папа", "audio": null}], "special": [{"L": "Гъ гъ", "ipa": "ʁ", "hint": "картавое, глубокое «г» (как франц. r)", "ex": "гъветӀ", "exru": "дерево", "audio": "audio/gh.mp3"}, {"L": "Гь гь", "ipa": "h", "hint": "лёгкий выдох, как англ. h", "ex": "гьан", "exru": "мясо", "audio": "audio/h.mp3"}, {"L": "ГӀ гӀ", "ipa": "ʕ", "hint": "гортанный звук, напряжение в горле (арабский ъайн)", "ex": "гӀеч", "exru": "яблоко", "audio": "audio/gI.mp3"}, {"L": "Къ къ", "ipa": "q͡χʼ", "hint": "резкое «к» из глубины горла со щелчком", "ex": "къо", "exru": "день", "audio": null}, {"L": "Кь кь", "ipa": "t͡ɬʼ", "hint": "щёлкающее боковое «кль»", "ex": "кьо", "exru": "мост", "audio": null}, {"L": "КӀ кӀ", "ipa": "kʼ", "hint": "резкое «к» со щелчком (смычка в горле)", "ex": "кӀал", "exru": "рот", "audio": null}, {"L": "Лъ лъ", "ipa": "ɬ", "hint": "глухое «л» — воздух по бокам языка, без голоса", "ex": "лъим", "exru": "вода", "audio": null}, {"L": "ТӀ тӀ", "ipa": "tʼ", "hint": "резкое «т» со щелчком", "ex": "тӀегь", "exru": "цветок", "audio": null}, {"L": "Хь хь", "ipa": "x", "hint": "мягкое «х» (как в «хи»)", "ex": "хьаг", "exru": "котёл", "audio": null}, {"L": "Хъ хъ", "ipa": "q͡χ", "hint": "глубокое хриплое «х» из горла", "ex": "хъал", "exru": "кора", "audio": null}, {"L": "ХӀ хӀ", "ipa": "ħ", "hint": "«х» с напряжением горла (тёплый выдох)", "ex": "хӀан", "exru": "сыр", "audio": null}, {"L": "ЦӀ цӀ", "ipa": "t͡sʼ", "hint": "резкое «ц» со щелчком", "ex": "цӀа", "exru": "огонь", "audio": null}, {"L": "ЧӀ чӀ", "ipa": "t͡ʃʼ", "hint": "резкое «ч» со щелчком", "ex": "чӀабар", "exru": "пол", "audio": null}], "audio": {"а": {"file": "audio/a.mp3", "ipa": "a", "src": "Open front unrounded vowel.ogg"}, "е": {"file": "audio/e.mp3", "ipa": "e", "src": "Close-mid front unrounded vowel.ogg"}, "и": {"file": "audio/i.mp3", "ipa": "i", "src": "Close front unrounded vowel.ogg"}, "д": {"file": "audio/d.mp3", "ipa": "d", "src": "Voiced alveolar plosive.ogg"}, "г": {"file": "audio/g.mp3", "ipa": "ɡ", "src": "Voiced velar plosive.ogg"}, "гъ": {"file": "audio/gh.mp3", "ipa": "ʁ", "src": "Voiced uvular fricative.ogg"}, "гь": {"file": "audio/h.mp3", "ipa": "h", "src": "Voiceless glottal fricative.ogg"}, "гӀ": {"file": "audio/gI.mp3", "ipa": "ʕ", "src": "Voiced pharyngeal fricative.ogg"}}, "numbers": [{"av": "цо", "ru": "1"}, {"av": "кӀиго", "ru": "2"}, {"av": "лъабго", "ru": "3"}, {"av": "ункъго", "ru": "4"}, {"av": "щуго", "ru": "5"}, {"av": "анлъго", "ru": "6"}, {"av": "анкьго", "ru": "7"}, {"av": "микьго", "ru": "8"}, {"av": "ичӀго", "ru": "9"}, {"av": "анцӀго", "ru": "10"}], "themes": [{"id": "family", "title": "Семья", "emoji": "👨‍👩‍👧", "words": [{"ru": "мама", "av": "эбел"}, {"ru": "папа", "av": "эмен"}, {"ru": "брат", "av": "вац"}, {"ru": "сестра", "av": "яц"}, {"ru": "мальчик", "av": "вас"}, {"ru": "девочка", "av": "яс"}, {"ru": "бабушка", "av": "кӀодо"}, {"ru": "дедушка", "av": "кӀудада"}, {"ru": "семья", "av": "хъизан"}, {"ru": "друг", "av": "гьудул"}, {"ru": "человек", "av": "чи"}, {"ru": "мужчина", "av": "бихьинчи"}, {"ru": "женщина", "av": "чӀужугӀадан"}, {"ru": "ребёнок", "av": "лъимер"}, {"ru": "дети", "av": "лъимал"}, {"ru": "муж", "av": "рос"}, {"ru": "жена", "av": "лъади"}, {"ru": "родня", "av": "агьлу"}]}, {"id": "body", "title": "Тело", "emoji": "🧍", "words": [{"ru": "голова", "av": "бетӀер"}, {"ru": "глаз", "av": "бер"}, {"ru": "рука", "av": "квер"}, {"ru": "нога", "av": "бох"}, {"ru": "рот", "av": "кӀал"}, {"ru": "нос", "av": "мегӀер"}, {"ru": "ухо", "av": "гӀин"}, {"ru": "волосы", "av": "рас"}, {"ru": "сердце", "av": "ракӀ"}, {"ru": "зуб", "av": "ца"}, {"ru": "язык", "av": "мацӀ"}, {"ru": "лицо", "av": "гьумер"}, {"ru": "живот", "av": "чехь"}, {"ru": "палец", "av": "килищ"}, {"ru": "кровь", "av": "би"}, {"ru": "кость", "av": "ракьа"}]}, {"id": "food", "title": "Квен-тӏех", "emoji": "🍎", "words": [{"ru": "хлеб", "av": "чед"}, {"ru": "вода", "av": "лъим"}, {"ru": "молоко", "av": "рахь"}, {"ru": "мясо", "av": "гьан"}, {"ru": "яблоко", "av": "гӀеч"}, {"ru": "сыр", "av": "хӀан"}, {"ru": "соль", "av": "цӀам"}, {"ru": "масло", "av": "нах"}, {"ru": "чай", "av": "чай"}, {"ru": "яйцо", "av": "хоно"}, {"ru": "мёд", "av": "гьоцӀо"}, {"ru": "груша", "av": "гени"}, {"ru": "орех", "av": "цӀулакьо"}, {"ru": "суп", "av": "чурпа"}, {"ru": "хинкал", "av": "хинкӀ"}, {"ru": "еда", "av": "квен"}]}, {"id": "animals", "title": "Хӏайванал", "emoji": "🐴", "words": [{"ru": "собака", "av": "гьой"}, {"ru": "кошка", "av": "кету"}, {"ru": "корова", "av": "гӀака"}, {"ru": "лошадь", "av": "чу"}, {"ru": "птица", "av": "хӀинчӀ"}, {"ru": "курица", "av": "гӀанкӀу"}, {"ru": "овца", "av": "чахъу"}, {"ru": "волк", "av": "бацӀ"}, {"ru": "медведь", "av": "ци"}, {"ru": "рыба", "av": "ччугӀа"}, {"ru": "осёл", "av": "хӀама"}, {"ru": "коза", "av": "цӀцӀе"}, {"ru": "бык", "av": "оц"}, {"ru": "телёнок", "av": "бече"}, {"ru": "мышь", "av": "гӀункӀкӀ"}, {"ru": "муха", "av": "тӀутӀ"}, {"ru": "пчела", "av": "нанай"}]}, {"id": "home", "title": "Рукъ", "emoji": "🏠", "words": [{"ru": "дом", "av": "рукъ"}, {"ru": "книга", "av": "тӀехь"}, {"ru": "стол", "av": "стол"}, {"ru": "дверь", "av": "нуцӀа"}, {"ru": "окно", "av": "гордо"}, {"ru": "село", "av": "росу"}, {"ru": "город", "av": "шагьар"}, {"ru": "комната", "av": "рукъ"}, {"ru": "огонь", "av": "цӀа"}, {"ru": "вещь", "av": "жо"}, {"ru": "дорога", "av": "нух"}, {"ru": "нож", "av": "нус"}, {"ru": "ложка", "av": "гъуд"}]}, {"id": "nature", "title": "Тӏабигӏат", "emoji": "⛰️", "words": [{"ru": "гора", "av": "мегӀер"}, {"ru": "небо", "av": "зоб"}, {"ru": "солнце", "av": "бакъ"}, {"ru": "луна", "av": "моцӀ"}, {"ru": "звезда", "av": "цӀва"}, {"ru": "камень", "av": "гамачӀ"}, {"ru": "река", "av": "гӀор"}, {"ru": "лес", "av": "рохь"}, {"ru": "цветок", "av": "тӀегь"}, {"ru": "дерево", "av": "гъветӀ"}, {"ru": "земля", "av": "ракь"}, {"ru": "ветер", "av": "гьури"}, {"ru": "дождь", "av": "цӀад"}, {"ru": "снег", "av": "гӀазу"}, {"ru": "трава", "av": "хер"}]}, {"id": "colors", "title": "Кьерал", "emoji": "🎨", "words": [{"ru": "белый", "av": "хъахӀаб"}, {"ru": "чёрный", "av": "чӀегӀераб"}, {"ru": "красный", "av": "багӀараб"}, {"ru": "жёлтый", "av": "гӀобилаб"}, {"ru": "зелёный", "av": "гӀурччинаб"}, {"ru": "синий", "av": "хъахӀилаб"}]}, {"id": "time", "title": "Заман", "emoji": "🕐", "words": [{"ru": "день", "av": "къо"}, {"ru": "ночь", "av": "сордо"}, {"ru": "утро", "av": "радал"}, {"ru": "год", "av": "лъагӀел"}, {"ru": "месяц", "av": "моцӀ"}, {"ru": "сегодня", "av": "жакъа"}, {"ru": "завтра", "av": "метер"}, {"ru": "вчера", "av": "сон"}, {"ru": "сейчас", "av": "гьанже"}, {"ru": "время", "av": "заман"}]}, {"id": "school", "title": "Школа", "emoji": "✏️", "words": [{"ru": "школа", "av": "школа"}, {"ru": "тетрадь", "av": "даптар"}, {"ru": "буква", "av": "хӀарп"}, {"ru": "слово", "av": "рагӀи"}, {"ru": "ручка", "av": "къалам"}, {"ru": "учитель", "av": "мугӀалим"}, {"ru": "ученик", "av": "цӀалдохъан"}, {"ru": "урок", "av": "дарс"}, {"ru": "язык", "av": "мацӀ"}, {"ru": "число", "av": "рикӀкӀен"}, {"ru": "имя", "av": "цӀар"}]}, {"id": "clothes", "title": "Ретӏел", "emoji": "👕", "words": [{"ru": "одежда", "av": "ретӀел"}, {"ru": "рубашка", "av": "гурде"}, {"ru": "шапка", "av": "тӀагъур"}, {"ru": "обувь", "av": "хьитал"}, {"ru": "платок", "av": "чаба"}, {"ru": "штаны", "av": "тӀажу"}, {"ru": "шуба", "av": "тӀимугъ"}, {"ru": "пояс", "av": "рачел"}]}, {"id": "people", "title": "ГӀадамал", "emoji": "👥", "words": [{"ru": "народ", "av": "халкъ"}, {"ru": "гость", "av": "гьобол"}, {"ru": "сосед", "av": "мадугьал"}, {"ru": "мастер", "av": "устар"}, {"ru": "пастух", "av": "вехь"}, {"ru": "храбрец", "av": "бахӀарчи"}]}, {"id": "verbs", "title": "Глаголы", "emoji": "🏃", "words": [{"ru": "идти", "av": "ине"}, {"ru": "прийти", "av": "вачӀине"}, {"ru": "есть/кушать", "av": "квине"}, {"ru": "пить", "av": "гьекъезе"}, {"ru": "сказать", "av": "абизе"}, {"ru": "говорить", "av": "бицине"}, {"ru": "знать", "av": "лъазе"}, {"ru": "видеть", "av": "бихьизе"}, {"ru": "делать", "av": "гьабизе"}, {"ru": "читать", "av": "цӀализе"}, {"ru": "писать", "av": "хъвазе"}, {"ru": "работать", "av": "хӀалтӀизе"}, {"ru": "хотеть", "av": "бокьизе"}, {"ru": "мочь", "av": "кӀвезе"}, {"ru": "спать", "av": "кьижизе"}, {"ru": "стоять", "av": "чӀезе"}, {"ru": "брать", "av": "босизе"}, {"ru": "давать", "av": "кьезе"}, {"ru": "играть", "av": "хӀазе"}, {"ru": "прыгать", "av": "кӀанцӀизе"}, {"ru": "плакать", "av": "гӀодизе"}, {"ru": "слышать", "av": "рагӀизе"}, {"ru": "смотреть", "av": "балагьизе"}, {"ru": "открыть", "av": "рагьизе"}, {"ru": "закрыть", "av": "къазе"}, {"ru": "жить", "av": "бетӀербахъизе"}, {"ru": "петь", "av": "ахӀизе"}]}, {"id": "adjs", "title": "Прилагательные", "emoji": "🌟", "words": [{"ru": "хороший", "av": "лъикӀаб"}, {"ru": "плохой", "av": "квешаб"}, {"ru": "большой", "av": "кӀудияб"}, {"ru": "маленький", "av": "гьитӀинаб"}, {"ru": "новый", "av": "цӀияб"}, {"ru": "старый", "av": "басрияб"}, {"ru": "красивый", "av": "берцинаб"}, {"ru": "длинный", "av": "халатаб"}, {"ru": "короткий", "av": "къокъаб"}, {"ru": "высокий", "av": "борхатаб"}, {"ru": "тёплый", "av": "хинаб"}, {"ru": "холодный", "av": "цӀорораб"}, {"ru": "быстрый", "av": "хехаб"}, {"ru": "сильный", "av": "къуватаб"}, {"ru": "вкусный", "av": "гьуинаб"}, {"ru": "много", "av": "гӀемер"}, {"ru": "тяжёлый", "av": "захӀматаб"}, {"ru": "лёгкий", "av": "бигьаяб"}, {"ru": "умный", "av": "гӀакъилаб"}, {"ru": "весёлый", "av": "кепаб"}, {"ru": "чистый", "av": "бацӀцӀадаб"}, {"ru": "пустой", "av": "бошаб"}]}, {"id": "common", "title": "Часто нужные", "emoji": "💬", "words": [{"ru": "да", "av": "гьо"}, {"ru": "нет", "av": "гьечӀо"}, {"ru": "хорошо", "av": "лъикӀго"}, {"ru": "спасибо", "av": "баркала"}, {"ru": "здесь", "av": "гьаниб"}, {"ru": "там", "av": "гьениб"}, {"ru": "как", "av": "кин"}, {"ru": "что", "av": "щиб"}, {"ru": "кто", "av": "щив"}, {"ru": "где", "av": "киб"}, {"ru": "когда", "av": "кида"}, {"ru": "сколько", "av": "чан"}, {"ru": "почему", "av": "щай"}, {"ru": "очень", "av": "цӀакъ"}, {"ru": "вместе", "av": "цадахъ"}]}], "lessons": [{"id": "alpha", "emoji": "🔤", "t": "Гьаркьал ва хӀарпал", "sub": "Звуки и буквы — с аудио", "teach": "\n<p class=\"lead\">Аварский пишется кириллицей. Большинство букв читаются как в русском.\nНо есть <b>особые звуки</b> — они и делают аварский аварским. Нажми ▶, чтобы услышать.</p>\n<div class=\"callout b\"><b>Палочка «Ӏ»</b> после буквы (кӀ, тӀ, цӀ, чӀ, къ…) — это резкий «щелчок»:\nвоздух зажимается в горле и резко выходит. Это не отдельная буква, а знак «резкого» звука.</div>\n<h3>Гласные</h3><p>Их всего пять: <b>а, е, и, о, у</b> (и «э»). Читаются чётко и коротко.</p>\n<h3>Особые согласные</h3>\n<p>Смотри таблицу ниже (вкладка «Алфавит» в справочнике всегда под рукой). Каждый звук —\nс примером-словом. Слушай и повторяй вслух.</p>\n<div class=\"callout g\"><b>Гортанные:</b> гӀ, хӀ, гъ, хъ, къ произносятся глубоко в горле —\nэто нормально, что сначала непривычно. Слушай образец и подражай.</div>\n", "words": [], "ex": [{"t": "mcq", "q": "Что означает палочка «Ӏ» после буквы (кӀ, тӀ, цӀ)?", "opts": ["Резкий «щелчок» — смычка в горле", "Долгий звук", "Ударение"], "a": 0}, {"t": "mcq", "q": "Сколько гласных в аварском?", "opts": ["Пять (а,е,и,о,у)", "Десять", "Три"], "a": 0}, {"t": "mcq", "q": "Звук «лъ» — это…", "opts": ["Глухое «л» без голоса, воздух по бокам", "Мягкое ль", "Как русское л"], "a": 0}], "drill": {"gen": "alpha"}}, {"id": "class", "emoji": "👦👧", "t": "Классал ва «вуго»", "sub": "Три класса и слово «есть»", "teach": "\n<p class=\"lead\">В аварском у каждого существительного есть <b>класс</b> (похоже на род).\nКласс показывает не сама буква слова, а «классный показатель» — <b>в / й / б</b>:</p>\n<table class=\"vguide\">\n<tr><td><b>I класс</b> — <span class=\"v\">в</span></td><td>мужчины, мальчики</td><td>вас <span class=\"az\">мальчик</span></td></tr>\n<tr><td><b>II класс</b> — <span class=\"v\">й</span></td><td>женщины, девочки</td><td>яс <span class=\"az\">девочка</span></td></tr>\n<tr><td><b>III класс</b> — <span class=\"v\">б</span></td><td>вещи, животные, всё остальное</td><td>чу <span class=\"az\">лошадь</span></td></tr>\n<tr><td><b>Мн. число</b> — <span class=\"v\">р</span></td><td>много кого/чего угодно</td><td>лъимал <span class=\"az\">дети</span></td></tr>\n</table>\n<p>Слово <b>«есть / является»</b> тоже меняется по классу — это одно из самых нужных слов:</p>\n<table class=\"vguide\">\n<tr><td>I (он)</td><td class=\"v\">вуго</td><td>Дов вас <b>вуго</b> <span class=\"az\">Он мальчик</span></td></tr>\n<tr><td>II (она)</td><td class=\"v\">йиго</td><td>Дой яс <b>йиго</b> <span class=\"az\">Она девочка</span></td></tr>\n<tr><td>III (это)</td><td class=\"v\">буго</td><td>Доб чу <b>буго</b> <span class=\"az\">Это лошадь</span></td></tr>\n<tr><td>мн.</td><td class=\"v\">руго</td><td>Дол лъимал <b>руго</b> <span class=\"az\">Это дети</span></td></tr>\n</table>\n<div class=\"callout g\"><b>Про тебя.</b> Если ты говоришь о себе: мальчик/мужчина —\n«Дун … <b>вуго</b>», девочка/женщина — «Дун … <b>йиго</b>». Переключи ♂/♀ вверху — примеры изменятся!</div>\n", "words": [{"ru": "я", "av": "дун"}, {"ru": "ты", "av": "мун"}, {"ru": "он (тот)", "av": "дов", "cls": "I"}, {"ru": "она (та)", "av": "дой", "cls": "II"}, {"ru": "это (то)", "av": "доб", "cls": "III"}, {"ru": "мальчик", "av": "вас", "cls": "I"}, {"ru": "девочка", "av": "яс", "cls": "II"}, {"ru": "лошадь", "av": "чу", "cls": "III"}, {"ru": "мама", "av": "эбел", "cls": "II"}, {"ru": "папа", "av": "эмен", "cls": "I"}, {"ru": "дети", "av": "лъимал", "cls": "PL"}, {"ru": "есть/является (он)", "av": "вуго"}, {"ru": "есть (она)", "av": "йиго"}, {"ru": "есть (это)", "av": "буго"}, {"ru": "есть (мн.)", "av": "руго"}], "ex": [{"t": "mcq", "q": "Как сказать «Он мальчик»?", "opts": ["Дов вас вуго", "Дой яс йиго", "Доб чу буго"], "a": 0}, {"t": "mcq", "q": "Какой показатель у III класса (вещи, животные)?", "opts": ["б", "в", "й"], "a": 0}, {"t": "say", "q": "Скажи: «Это лошадь»", "ans": "Доб чу буго"}, {"t": "mcq", "q": "Девочка Аминат говорит о себе. Как?", "opts": ["Дун яс йиго", "Дун вас вуго", "Дой яс буго"], "a": 0}], "drill": {"gen": "copula"}}, {"id": "greet", "emoji": "👋", "t": "Салам!", "sub": "Здравствуй, знакомимся", "teach": "\n<p class=\"lead\">Даже в «здравствуй» слышен класс! Мужчине/мальчику — <b>ВорчӀами</b>,\nженщине/девочке — <b>ЙорчӀами</b>, нескольким — <b>РорчӀами</b>.</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">ВорчӀами!</td><td>Здравствуй (мужчине)</td></tr>\n<tr><td class=\"v\">ЙорчӀами!</td><td>Здравствуй (женщине)</td></tr>\n<tr><td class=\"v\">РорчӀами!</td><td>Здравствуйте (многим)</td></tr>\n</table>\n<p>Знакомимся:</p>\n<table class=\"vguide\">\n<tr><td>Дуда цӀар щиб?</td><td>Как тебя зовут? <span class=\"az\">(букв. «твоё имя что?»)</span></td></tr>\n<tr><td>Дир цӀар … <b>буго</b></td><td>Моё имя … <span class=\"az\">(имя — вещь, III класс → буго)</span></td></tr>\n<tr><td>Дун … <b>вуго/йиго</b></td><td>Я … (мальчик → вуго, девочка → йиго)</td></tr>\n</table>\n<div class=\"callout b\"><b>Спасибо</b> — <b>баркала</b>. <b>Да</b> — <b>гьо</b>, <b>нет</b> — <b>гьечӀо</b>.\nВежливого «вы» в аварском нет — даже старшим говорят «мун» (ты).</div>\n", "words": [{"ru": "здравствуй (м.)", "av": "ворчӀами"}, {"ru": "здравствуй (ж.)", "av": "йорчӀами"}, {"ru": "здравствуйте (мн.)", "av": "рорчӀами"}, {"ru": "имя", "av": "цӀар"}, {"ru": "как тебя зовут?", "av": "дуда цӀар щиб?"}, {"ru": "спасибо", "av": "баркала"}, {"ru": "да", "av": "гьо"}, {"ru": "нет", "av": "гьечӀо"}, {"ru": "друг", "av": "гьудул"}], "ex": [{"t": "mcq", "q": "Ты здороваешься с девочкой. Что скажешь?", "opts": ["ЙорчӀами!", "ВорчӀами!", "РорчӀами!"], "a": 0}, {"t": "say", "q": "Спроси: «Как тебя зовут?»", "ans": "Дуда цӀар щиб?"}, {"t": "mcq", "q": "«Спасибо» по-аварски —", "opts": ["Баркала", "ГьечӀо", "Гьо"], "a": 0}, {"t": "say", "q": "Мальчик Муса представляется: «Я — Муса».", "ans": "Дун Муса вуго"}], "drill": {"gen": "greet"}}, {"id": "this", "emoji": "👉", "t": "Гьаб, гьеб, доб", "sub": "Это… / то… + что это?", "teach": "\n<p class=\"lead\">Указательные слова тоже берут классный показатель. Для вещей (III класс) — на <b>-б</b>:</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">гьаб</td><td>это (рядом)</td><td>Гьаб тӀехь буго <span class=\"az\">Это книга</span></td></tr>\n<tr><td class=\"v\">гьеб</td><td>то (чуть дальше)</td><td>Гьеб къалам буго <span class=\"az\">Это ручка</span></td></tr>\n<tr><td class=\"v\">доб</td><td>то (далеко)</td><td>Доб рукъ буго <span class=\"az\">То дом</span></td></tr>\n</table>\n<p>Вопрос про вещь: <b>Гьаб щиб бугеб?</b> — «Это что?». Отвечаем: <b>Гьаб … буго</b>.</p>\n<div class=\"callout g\">Порядок слов простой: <b>[Это] [вещь] буго</b>. Слово «буго» всегда в конце\nи его нельзя пропускать (в отличие от русского «это — книга»).</div>\n", "words": [{"ru": "это (рядом)", "av": "гьаб", "cls": "III"}, {"ru": "то", "av": "гьеб", "cls": "III"}, {"ru": "то (далеко)", "av": "доб", "cls": "III"}, {"ru": "что это?", "av": "гьаб щиб бугеб?"}, {"ru": "книга", "av": "тӀехь", "cls": "III"}, {"ru": "ручка", "av": "къалам", "cls": "III"}, {"ru": "стол", "av": "стол", "cls": "III"}, {"ru": "дверь", "av": "нуцӀа", "cls": "III"}, {"ru": "окно", "av": "гордо", "cls": "III"}, {"ru": "вещь", "av": "жо", "cls": "III"}, {"ru": "дом", "av": "рукъ", "cls": "III"}], "ex": [{"t": "mcq", "q": "Как сказать «Это книга»?", "opts": ["Гьаб тӀехь буго", "Гьаб тӀехь вуго", "Доб яс йиго"], "a": 0}, {"t": "say", "q": "Скажи: «То дом» (далеко)", "ans": "Доб рукъ буго"}, {"t": "mcq", "q": "Слово «буго» ставится…", "opts": ["В конце предложения", "В начале", "Можно опустить"], "a": 0}], "drill": {"gen": "thisis"}}, {"id": "my", "emoji": "👪", "t": "Дир, дур — моя семья", "sub": "Мой / твой + родные", "teach": "\n<p class=\"lead\"><b>Дир</b> — мой/моя/моё, <b>дур</b> — твой/твоя/твоё. Они не меняются по классу,\nно «есть» после них — меняется:</p>\n<table class=\"vguide\">\n<tr><td>Дир вац <b class=\"v\">вуго</b></td><td>У меня есть брат <span class=\"az\">(брат — I класс)</span></td></tr>\n<tr><td>Дир яц <b class=\"v\">йиго</b></td><td>У меня есть сестра <span class=\"az\">(сестра — II класс)</span></td></tr>\n<tr><td>Дир чу <b class=\"v\">буго</b></td><td>У меня есть лошадь <span class=\"az\">(вещь/животное — III)</span></td></tr>\n<tr><td>Дир лъимал <b class=\"v\">руго</b></td><td>У меня есть дети <span class=\"az\">(мн. число)</span></td></tr>\n</table>\n<div class=\"callout b\">«У меня есть …» в аварском — это просто <b>«Дир … вуго/йиго/буго/руго»</b>\n(букв. «моё … есть»). Выбирай в/й/б/р по классу того, о ком говоришь.</div>\n", "words": [{"ru": "мой", "av": "дир"}, {"ru": "твой", "av": "дур"}, {"ru": "брат", "av": "вац", "cls": "I"}, {"ru": "сестра", "av": "яц", "cls": "II"}, {"ru": "бабушка", "av": "кӀодо", "cls": "II"}, {"ru": "дедушка", "av": "кӀудада", "cls": "I"}, {"ru": "семья", "av": "хъизан", "cls": "III"}, {"ru": "ребёнок", "av": "лъимер", "cls": "III"}, {"ru": "муж", "av": "рос", "cls": "I"}, {"ru": "жена", "av": "лъади", "cls": "II"}, {"ru": "человек", "av": "чи", "cls": "I"}], "ex": [{"t": "mcq", "q": "«У меня есть сестра» —", "opts": ["Дир яц йиго", "Дир яц вуго", "Дир вац буго"], "a": 0}, {"t": "say", "q": "Скажи: «У меня есть брат»", "ans": "Дир вац вуго"}, {"t": "mcq", "q": "«Твой» по-аварски —", "opts": ["дур", "дир", "доб"], "a": 0}, {"t": "say", "q": "Скажи: «У меня есть дети»", "ans": "Дир лъимал руго"}], "drill": {"gen": "possess"}}, {"id": "adj", "emoji": "🌈", "t": "Сифатал ва кьерал", "sub": "Признаки и цвета (согласование)", "teach": "\n<p class=\"lead\">Прилагательное <b>согласуется с классом</b>: последняя буква меняется на в/й/б/л.\nСловарная форма — на <b>-б</b> (для вещей).</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">кӀудияб</td><td>большой (III)</td><td>кӀудия<b>б</b> рукъ <span class=\"az\">большой дом</span></td></tr>\n<tr><td class=\"v\">кӀудияв</td><td>большой (I, о мужчине)</td><td>кӀудия<b>в</b> вас <span class=\"az\">большой мальчик</span></td></tr>\n<tr><td class=\"v\">кӀудияй</td><td>большая (II, о женщине)</td><td>кӀудия<b>й</b> яс <span class=\"az\">большая девочка</span></td></tr>\n<tr><td class=\"v\">кӀудиял</td><td>большие (мн.)</td><td>кӀудия<b>л</b> лъимал <span class=\"az\">большие дети</span></td></tr>\n</table>\n<p>Прилагательное ставится <b>перед</b> словом: <b>лъикӀаб тӀехь буго</b> — «хорошая книга».</p>\n<div class=\"callout g\">Правило простое: бери словарную форму (…аб), замени последнюю <b>б</b> на\n<b>в</b> (муж.), <b>й</b> (жен.), <b>л</b> (мн.) — и всё согласовано.</div>\n", "words": [{"ru": "хороший", "av": "лъикӀаб", "cls": "III"}, {"ru": "плохой", "av": "квешаб", "cls": "III"}, {"ru": "большой", "av": "кӀудияб", "cls": "III"}, {"ru": "маленький", "av": "гьитӀинаб", "cls": "III"}, {"ru": "новый", "av": "цӀияб", "cls": "III"}, {"ru": "красивый", "av": "берцинаб", "cls": "III"}, {"ru": "белый", "av": "хъахӀаб", "cls": "III"}, {"ru": "чёрный", "av": "чӀегӀераб", "cls": "III"}, {"ru": "красный", "av": "багӀараб", "cls": "III"}, {"ru": "жёлтый", "av": "гӀобилаб", "cls": "III"}, {"ru": "зелёный", "av": "гӀурччинаб", "cls": "III"}, {"ru": "синий", "av": "хъахӀилаб", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Большой мальчик» (I класс) —", "opts": ["кӀудияв вас", "кӀудияб вас", "кӀудияй яс"], "a": 0}, {"t": "say", "q": "Скажи: «хорошая книга» (тӀехь — III)", "ans": "лъикӀаб тӀехь буго"}, {"t": "mcq", "q": "Чтобы согласовать с девочкой (II), последняя буква прилагательного —", "opts": ["й", "в", "б"], "a": 0}, {"t": "say", "q": "Скажи «красивая девочка» (о девочке, II)", "ans": "берцинай яс йиго"}], "drill": {"gen": "adj"}}, {"id": "num", "emoji": "🔢", "t": "РикӀкӀаби", "sub": "Числа 1–10 и счёт", "teach": "\n<p class=\"lead\">Считаем: числа оканчиваются на <b>-го</b>. Перед словом «-го» часто отпадает:\n<b>кӀи<span class=\"az\">-</span>го вас</b> — «два мальчика».</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">цо</td><td>1</td><td class=\"v\">анлъго</td><td>6</td></tr>\n<tr><td class=\"v\">кӀиго</td><td>2</td><td class=\"v\">анкьго</td><td>7</td></tr>\n<tr><td class=\"v\">лъабго</td><td>3</td><td class=\"v\">микьго</td><td>8</td></tr>\n<tr><td class=\"v\">ункъго</td><td>4</td><td class=\"v\">ичӀго</td><td>9</td></tr>\n<tr><td class=\"v\">щуго</td><td>5</td><td class=\"v\">анцӀго</td><td>10</td></tr>\n</table>\n<p>Вопрос «сколько?» — <b>чан?</b>. Например: <b>Чан вас вугев?</b> — «Сколько мальчиков?».</p>\n<div class=\"callout b\">Интересно: после 10 аварцы считают двадцатками — <b>къого</b> = 20,\n<b>кӀикъого</b> = 40 (букв. «два-двадцать»). Но для начала хватит 1–10!</div>\n", "words": [{"ru": "1", "av": "цо"}, {"ru": "2", "av": "кӀиго"}, {"ru": "3", "av": "лъабго"}, {"ru": "4", "av": "ункъго"}, {"ru": "5", "av": "щуго"}, {"ru": "6", "av": "анлъго"}, {"ru": "7", "av": "анкьго"}, {"ru": "8", "av": "микьго"}, {"ru": "9", "av": "ичӀго"}, {"ru": "10", "av": "анцӀго"}, {"ru": "сколько?", "av": "чан"}, {"ru": "глаз", "av": "бер", "cls": "III"}, {"ru": "рука", "av": "квер", "cls": "III"}, {"ru": "нога", "av": "бох", "cls": "III"}, {"ru": "голова", "av": "бетӀер", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Два» по-аварски —", "opts": ["кӀиго", "лъабго", "цо"], "a": 0}, {"t": "say", "q": "Скажи: «три дома» (рукъ)", "ans": "лъабго рукъ"}, {"t": "mcq", "q": "Что значит «чан?»", "opts": ["Сколько?", "Что?", "Где?"], "a": 0}, {"t": "say", "q": "Посчитай: цо, кӀиго, …? (назови «три»)", "ans": "лъабго"}], "drill": {"gen": "num"}}, {"id": "pres", "emoji": "🍽️", "t": "Настоящее время", "sub": "Что делаю? (‑ула) + еда", "teach": "\n<p class=\"lead\">Глагол в настоящем времени оканчивается на <b>‑ула / ‑уна</b>:\n<b>цӀал‑ула</b> «читает», <b>кван‑а</b> → <b>кванахъ‑ула</b> «ест».</p>\n<table class=\"vguide\">\n<tr><td>цӀализе → цӀал<b class=\"v\">ула</b></td><td>читать → читает/читаю</td></tr>\n<tr><td>хъвазе → хъ<b class=\"v\">вала</b></td><td>писать → пишет</td></tr>\n<tr><td>кваназе → кван<b class=\"v\">ала</b></td><td>есть → ест</td></tr>\n</table>\n<div class=\"callout g\"><b>Важно (эргатив).</b> Кто что-то <i>делает с предметом</i>, стоит с окончанием\n<b>‑ца</b>: <b>Дица тӀехь цӀалула</b> — «Я читаю книгу» (букв. «мной книга читается»).\n«Дун» → «Ди<b>ца</b>», «мун» → «Ду<b>ца</b>».</div>\n<p>Форма глагола не зависит от класса читающего — меняется только «‑ца» у деятеля.</p>\n", "words": [{"ru": "читать", "av": "цӀализе", "cls": "III"}, {"ru": "писать", "av": "хъвазе", "cls": "III"}, {"ru": "есть/кушать", "av": "квине", "cls": "III"}, {"ru": "пить", "av": "гьекъезе", "cls": "III"}, {"ru": "знать", "av": "лъазе", "cls": "III"}, {"ru": "смотреть", "av": "балагьизе", "cls": "III"}, {"ru": "я (эрг.)", "av": "дица"}, {"ru": "ты (эрг.)", "av": "дуца"}, {"ru": "хлеб", "av": "чед", "cls": "III"}, {"ru": "вода", "av": "лъим", "cls": "III"}, {"ru": "мясо", "av": "гьан", "cls": "III"}, {"ru": "яблоко", "av": "гӀеч", "cls": "III"}, {"ru": "молоко", "av": "рахь", "cls": "III"}, {"ru": "еда", "av": "квен", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Я читаю книгу» —", "opts": ["Дица тӀехь цӀалула", "Дун тӀехь цӀалула", "Дир тӀехь буго"], "a": 0}, {"t": "say", "q": "Скажи: «Я пью воду» (гьекъезе → гьекъола)", "ans": "Дица лъим гьекъола"}, {"t": "mcq", "q": "Окончание настоящего времени —", "opts": ["‑ула/‑уна", "‑ана", "‑ила"], "a": 0}], "drill": {"gen": "verbpres"}}, {"id": "want", "emoji": "🎒", "t": "Хочу и могу", "sub": "Бокьун буго / кӀвела + школа", "teach": "\n<p class=\"lead\">Сказать «хочу» и «могу» — это уже настоящая речь!</p>\n<table class=\"vguide\">\n<tr><td>Дие … <b>бокьун буго</b></td><td>Я хочу … <span class=\"az\">(мне … желаемо есть)</span></td></tr>\n<tr><td>Дида … <b>кӀвела</b></td><td>Я могу … <span class=\"az\">(мне … по силам)</span></td></tr>\n</table>\n<p>Обрати внимание: «я» здесь — <b>дие</b> (хочу) или <b>дида</b> (могу), не «дун».\nЭто разные падежи слова «я»; пока просто запомни две готовые формулы.</p>\n<div class=\"callout b\">Пример: <b>Дие тӀехь бокьун буго</b> — «Я хочу книгу».\n<b>Дида цӀ<span class=\"v\">али</span>зе кӀвела</b> — «Я умею читать».</div>\n", "words": [{"ru": "я хочу", "av": "дие … бокьун буго"}, {"ru": "я могу", "av": "дида … кӀвела"}, {"ru": "мне (дат.)", "av": "дие"}, {"ru": "мне (мест.)", "av": "дида"}, {"ru": "делать", "av": "гьабизе", "cls": "III"}, {"ru": "работать", "av": "хӀалтӀизе", "cls": "III"}, {"ru": "играть", "av": "хӀазе", "cls": "III"}, {"ru": "школа", "av": "школа", "cls": "III"}, {"ru": "урок", "av": "дарс", "cls": "III"}, {"ru": "учитель", "av": "мугӀалим", "cls": "I"}, {"ru": "ученик", "av": "цӀалдохъан", "cls": "I"}, {"ru": "слово", "av": "рагӀи", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Я хочу книгу» —", "opts": ["Дие тӀехь бокьун буго", "Дун тӀехь буго", "Дир тӀехь кӀвела"], "a": 0}, {"t": "say", "q": "Скажи: «Я умею читать»", "ans": "Дида цӀализе кӀвела"}, {"t": "mcq", "q": "В формуле «хочу» слово «я» —", "opts": ["дие", "дун", "дир"], "a": 0}], "drill": {"gen": "want"}}, {"id": "neg", "emoji": "🚫", "t": "Отрицание", "sub": "Нет и «не делаю» + животные", "teach": "\n<p class=\"lead\">Три способа сказать «нет»:</p>\n<table class=\"vguide\">\n<tr><td><b>гьечӀо</b></td><td>нет / отсутствует</td><td>Чу гьечӀо <span class=\"az\">Лошади нет</span></td></tr>\n<tr><td>глагол + <b>‑ро</b></td><td>не делает (наст./буд.)</td><td>цӀалула → цӀалула<b>ро</b> <span class=\"az\">не читает</span></td></tr>\n<tr><td>глагол + <b>‑чӀо</b></td><td>не сделал (прош.)</td><td>цӀали<b>чӀо</b> <span class=\"az\">не читал</span></td></tr>\n</table>\n<div class=\"callout g\"><b>гьечӀо</b> не меняется по классу — удобно! «Вас гьечӀо» (мальчика нет),\n«Яс гьечӀо» (девочки нет), «Чу гьечӀо» (лошади нет) — одинаково.</div>\n", "words": [{"ru": "нет/отсутствует", "av": "гьечӀо"}, {"ru": "собака", "av": "гьой", "cls": "III"}, {"ru": "кошка", "av": "кету", "cls": "III"}, {"ru": "корова", "av": "гӀака", "cls": "III"}, {"ru": "овца", "av": "чахъу", "cls": "III"}, {"ru": "волк", "av": "бацӀ", "cls": "III"}, {"ru": "птица", "av": "хӀинчӀ", "cls": "III"}, {"ru": "рыба", "av": "ччугӀа", "cls": "III"}, {"ru": "осёл", "av": "хӀама", "cls": "III"}, {"ru": "коза", "av": "цӀцӀе", "cls": "III"}, {"ru": "медведь", "av": "ци", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Лошади нет» —", "opts": ["Чу гьечӀо", "Чу буго", "Чу вуго"], "a": 0}, {"t": "say", "q": "Скажи: «собаки нет» (гьой)", "ans": "Гьой гьечӀо"}, {"t": "mcq", "q": "«Не читает» — какое окончание?", "opts": ["‑ро", "‑чӀо", "‑ула"], "a": 0}], "drill": {"gen": "neg"}}, {"id": "past", "emoji": "🕰️", "t": "Прошедшее время", "sub": "Что сделал? (‑ана) + время", "teach": "\n<p class=\"lead\">Прошедшее время — окончание <b>‑ана / ‑на</b>. У глаголов движения появляется\n<b>классный показатель</b> в начале, по тому, кто действовал:</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">Дун вачӀана</td><td>Я пришёл (мальчик/мужчина, I → в‑)</td></tr>\n<tr><td class=\"v\">Дун йачӀана</td><td>Я пришла (девочка/женщина, II → й‑)</td></tr>\n<tr><td>Дица тӀехь цӀал<b class=\"v\">ана</b></td><td>Я прочитал книгу</td></tr>\n</table>\n<div class=\"callout b\">Слушай себя: если ты мальчик — «в<b>а</b>чӀана», если девочка —\n«й<b>а</b>чӀана». Переключи ♂/♀ вверху и посмотри, как меняются примеры в тренировке!</div>\n", "words": [{"ru": "пришёл/пришла", "av": "вачӀана"}, {"ru": "сделал", "av": "гьабуна"}, {"ru": "сегодня", "av": "жакъа"}, {"ru": "завтра", "av": "метер"}, {"ru": "вчера", "av": "сон"}, {"ru": "день", "av": "къо", "cls": "III"}, {"ru": "ночь", "av": "сордо", "cls": "III"}, {"ru": "утро", "av": "радал", "cls": "III"}, {"ru": "год", "av": "лъагӀел", "cls": "III"}, {"ru": "сейчас", "av": "гьанже"}], "ex": [{"t": "mcq", "q": "Мальчик говорит «Я пришёл» —", "opts": ["Дун вачӀана", "Дун йачӀана", "Дун вачӀина"], "a": 0}, {"t": "say", "q": "Девочка говорит «Я пришла»", "ans": "Дун йачӀана"}, {"t": "mcq", "q": "Окончание прошедшего времени —", "opts": ["‑ана/‑на", "‑ула", "‑ила"], "a": 0}], "drill": {"gen": "past"}}, {"id": "fut", "emoji": "⛰️", "t": "Будущее и просьбы", "sub": "Сделаю (‑ила) и «сделай!» + природа", "teach": "\n<p class=\"lead\">Будущее время — окончание <b>‑ила / ‑ина</b>: цӀал<b>ила</b> «прочтёт»,\nвачӀ<b>ина</b> «придёт».</p>\n<p>Просьба/приказ (повелительное):</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">‑е</td><td>с предметом</td><td>бос<b>е</b>! <span class=\"az\">возьми!</span></td></tr>\n<tr><td class=\"v\">‑а</td><td>без предмета</td><td>вачӀ<b>а</b>! <span class=\"az\">приходи!</span></td></tr>\n<tr><td class=\"v\">‑ге</td><td>запрет</td><td>цӀалу<b>ге</b>! <span class=\"az\">не читай!</span></td></tr>\n</table>\n<div class=\"callout g\">Пример дня: <b>Балагье!</b> — «Смотри!», <b>Ворчӏа!</b> — «Вставай!»,\n<b>Квана!</b> — «Кушай!».</div>\n", "words": [{"ru": "возьми!", "av": "босе"}, {"ru": "приходи!", "av": "вачӀа"}, {"ru": "смотри!", "av": "балагье"}, {"ru": "кушай!", "av": "квана"}, {"ru": "гора", "av": "мегӀер", "cls": "III"}, {"ru": "небо", "av": "зоб", "cls": "III"}, {"ru": "солнце", "av": "бакъ", "cls": "III"}, {"ru": "луна", "av": "моцӀ", "cls": "III"}, {"ru": "река", "av": "гӀор", "cls": "III"}, {"ru": "дерево", "av": "гъветӀ", "cls": "III"}, {"ru": "дождь", "av": "цӀад", "cls": "III"}, {"ru": "снег", "av": "гӀазу", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Возьми!» —", "opts": ["Босе!", "Босила", "БосечӀо"], "a": 0}, {"t": "say", "q": "Скажи: «Смотри!»", "ans": "Балагье"}, {"t": "mcq", "q": "Окончание будущего времени —", "opts": ["‑ила/‑ина", "‑ана", "‑ро"], "a": 0}], "drill": {"gen": "imper"}}, {"id": "quest", "emoji": "❓", "t": "Вопросы", "sub": "Что? кто? где? + одежда", "teach": "\n<p class=\"lead\">Вопросительные слова — половина разговора:</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">щиб?</td><td>что?</td><td class=\"v\">киб?</td><td>где?</td></tr>\n<tr><td class=\"v\">щив?</td><td>кто? (о мужчине)</td><td class=\"v\">кида?</td><td>когда?</td></tr>\n<tr><td class=\"v\">щий?</td><td>кто? (о женщине)</td><td class=\"v\">щай?</td><td>почему?</td></tr>\n<tr><td class=\"v\">кин?</td><td>как?</td><td class=\"v\">чан?</td><td>сколько?</td></tr>\n</table>\n<p>Вопрос «да/нет» — частица <b>‑ищ</b> на глаголе: <b>Мун вачӀанищ?</b> — «Ты пришёл?».</p>\n<div class=\"callout b\">Заметь: «кто?» тоже с классом — <b>щив?</b> о мужчине, <b>щий?</b> о женщине,\n<b>щиб?</b> о вещи. Аварский любит классы во всём!</div>\n", "words": [{"ru": "что?", "av": "щиб"}, {"ru": "кто? (м.)", "av": "щив"}, {"ru": "кто? (ж.)", "av": "щий"}, {"ru": "где?", "av": "киб"}, {"ru": "когда?", "av": "кида"}, {"ru": "почему?", "av": "щай"}, {"ru": "как?", "av": "кин"}, {"ru": "одежда", "av": "ретӀел", "cls": "III"}, {"ru": "рубашка", "av": "гурде", "cls": "III"}, {"ru": "шапка", "av": "тӀагъур", "cls": "III"}, {"ru": "обувь", "av": "хьитал", "cls": "PL"}], "ex": [{"t": "mcq", "q": "«Где?» по-аварски —", "opts": ["киб", "щиб", "кин"], "a": 0}, {"t": "say", "q": "Спроси: «Ты пришёл?» (мальчику)", "ans": "Мун вачӀанищ?"}, {"t": "mcq", "q": "«Кто?» о девочке —", "opts": ["щий", "щив", "щиб"], "a": 0}], "drill": {"gen": "quest"}}, {"id": "place", "emoji": "🧭", "t": "Где и куда", "sub": "Здесь, там, идти", "teach": "\n<p class=\"lead\">Место и движение:</p>\n<table class=\"vguide\">\n<tr><td class=\"v\">гьаниб</td><td>здесь</td><td class=\"v\">гьанибе</td><td>сюда</td></tr>\n<tr><td class=\"v\">гьениб</td><td>там</td><td class=\"v\">гьанире</td><td>туда</td></tr>\n</table>\n<p>Глагол <b>ине</b> «идти» — особенный: у него <b>нет</b> классного показателя,\nон одинаков для всех: <b>Дун ине</b> «я иду», <b>Дой ине</b> «она идёт».</p>\n<div class=\"callout g\">Сравни: «приходить» — с классом (вачӀине/йачӀине), а «идти» (ине) — без.\nНе говори «вине» или «йине» — только <b>ине</b>!</div>\n", "words": [{"ru": "здесь", "av": "гьаниб"}, {"ru": "там", "av": "гьениб"}, {"ru": "сюда", "av": "гьанибе"}, {"ru": "туда", "av": "гьанире"}, {"ru": "идти", "av": "ине"}, {"ru": "прийти", "av": "вачӀине"}, {"ru": "дорога", "av": "нух", "cls": "III"}, {"ru": "село", "av": "росу", "cls": "III"}, {"ru": "город", "av": "шагьар", "cls": "III"}], "ex": [{"t": "mcq", "q": "«Здесь» —", "opts": ["гьаниб", "гьениб", "гьанире"], "a": 0}, {"t": "mcq", "q": "Глагол «идти» (ине)…", "opts": ["не меняется по классу", "всегда с в‑", "всегда с б‑"], "a": 0}, {"t": "say", "q": "Скажи: «Я иду» (дун)", "ans": "Дун ине"}], "drill": {"gen": "place"}}, {"id": "talk", "emoji": "💬", "t": "Говорим!", "sub": "Собираем всё вместе", "teach": "\n<p class=\"lead\">Ты уже знаешь классы, «есть», числа, цвета, вопросы, прошедшее и будущее.\nСоберём короткий диалог:</p>\n<table class=\"vguide\">\n<tr><td>— ВорчӀами! Дуда цӀар щиб?</td><td>— Привет! Как тебя зовут?</td></tr>\n<tr><td>— Дир цӀар Муса буго. Дун цӀалдохъан вуго.</td><td>— Меня зовут Муса. Я ученик.</td></tr>\n<tr><td>— Дур чан сон бугеб?</td><td>— Сколько тебе лет? <span class=\"az\">(букв. твоих сколько лет есть)</span></td></tr>\n<tr><td>— Дир анцӀго сон буго. Баркала!</td><td>— Мне 10 лет. Спасибо!</td></tr>\n</table>\n<div class=\"callout b\">Продолжай тренироваться в разделе «Гьунар» (Тренировка) — там бесконечные\nзадания по всем темам. Говори вслух — так язык запоминается быстрее всего!</div>\n", "words": [{"ru": "сколько тебе лет?", "av": "дур чан сон бугеб?"}, {"ru": "мне … лет", "av": "дир … сон буго"}, {"ru": "гость", "av": "гьобол", "cls": "I"}, {"ru": "сосед", "av": "мадугьал", "cls": "I"}, {"ru": "хорошо", "av": "лъикӀго"}], "ex": [{"t": "say", "q": "Поздоровайся с девочкой и спроси имя", "ans": "ЙорчӀами! Дуда цӀар щиб?"}, {"t": "say", "q": "Скажи: «Меня зовут … , я ученик» (мальчик)", "ans": "Дир цӀар … буго. Дун цӀалдохъан вуго."}, {"t": "mcq", "q": "«Сколько тебе лет?» —", "opts": ["Дур чан сон бугеб?", "Дуда цӀар щиб?", "Мун вачӀанищ?"], "a": 0}], "drill": {"gen": "talk"}}], "phrases": {"Приветствие": [{"av": "ВорчӀами!", "ru": "Здравствуй (м.)"}, {"av": "ЙорчӀами!", "ru": "Здравствуй (ж.)"}, {"av": "РорчӀами!", "ru": "Здравствуйте (мн.)"}, {"av": "Ассаламу гӀалайкум!", "ru": "Мир вам! (приветствие)"}, {"av": "ВагӀалайкум салам!", "ru": "И вам мир! (ответ)"}, {"av": "Щиб хӀал бугеб?", "ru": "Как дела?"}, {"av": "ЛъикӀ буго", "ru": "Хорошо"}, {"av": "Баркала", "ru": "Спасибо"}, {"av": "Къо-мех лъикӀ!", "ru": "До свидания!"}, {"av": "Сордо лъикӀ!", "ru": "Спокойной ночи!"}], "Знакомство": [{"av": "Дуда цӀар щиб?", "ru": "Как тебя зовут?"}, {"av": "Дир цӀар … буго", "ru": "Меня зовут …"}, {"av": "Дун … вуго", "ru": "Я … (м.)"}, {"av": "Дун … йиго", "ru": "Я … (ж.)"}, {"av": "Дур чан сон бугеб?", "ru": "Сколько тебе лет?"}, {"av": "Дир … сон буго", "ru": "Мне … лет"}, {"av": "Мун киса вугев?", "ru": "Ты откуда? (м.)"}, {"av": "Дун … росулъаса вуго", "ru": "Я из села … (м.)"}], "В разговоре": [{"av": "Гьо", "ru": "Да"}, {"av": "ГьечӀо", "ru": "Нет"}, {"av": "Кин?", "ru": "Как?"}, {"av": "Щиб?", "ru": "Что?"}, {"av": "Киб?", "ru": "Где?"}, {"av": "Щай?", "ru": "Почему?"}, {"av": "Дида лъалеб гьечӀо", "ru": "Я не знаю"}, {"av": "Дида бичӀчӀуларо", "ru": "Я не понимаю"}, {"av": "Цинги абе", "ru": "Повтори ещё раз"}, {"av": "ЛъикӀго", "ru": "Хорошо / ладно"}], "Каждый день": [{"av": "Дие … бокьун буго", "ru": "Я хочу …"}, {"av": "Дида … кӀвела", "ru": "Я умею …"}, {"av": "Балагье!", "ru": "Смотри!"}, {"av": "Босе!", "ru": "Возьми!"}, {"av": "Квана!", "ru": "Кушай!"}, {"av": "ВачӀа!", "ru": "Иди сюда! (м.)"}, {"av": "Дун ине", "ru": "Я иду"}, {"av": "Дун вачӀана", "ru": "Я пришёл"}]}, "verbs": [{"inf": "цӀализе", "ru": "читать", "obj": "тӀехь", "pres": "цӀалула", "past": "цӀалана", "imp": "цӀале", "tr": true}, {"inf": "хъвазе", "ru": "писать", "obj": "кагъат", "pres": "хъвала", "past": "хъвана", "imp": "хъвай", "tr": true}, {"inf": "кваназе", "ru": "есть", "obj": "чед", "pres": "кванала", "past": "кванана", "imp": "квана", "tr": true}, {"inf": "гьекъезе", "ru": "пить", "obj": "лъим", "pres": "гьекъола", "past": "гьекъана", "imp": "гьекъе", "tr": true}, {"inf": "балагьизе", "ru": "смотреть", "obj": "", "pres": "балагьула", "past": "балагьана", "imp": "балагье", "tr": false}]}</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('appdata').textContent);
+
+/* ---------------- state ---------------- */
+const S = JSON.parse(localStorage.getItem('avk_state')||'{}');
+if(S.ipa===undefined)S.ipa=true; if(!S.gender)S.gender='m'; if(!S.tab)S.tab='home';
+function save(){localStorage.setItem('avk_state',JSON.stringify(S));}
+const PROG = JSON.parse(localStorage.getItem('avk_prog')||'{}');
+if(!PROG.lessons)PROG.lessons={}; if(!PROG.drill)PROG.drill={a:0,c:0,byKey:{}};
+function saveProg(){localStorage.setItem('avk_prog',JSON.stringify(PROG));}
+const SRS = JSON.parse(localStorage.getItem('avk_srs')||'{}');
+function saveSrs(){localStorage.setItem('avk_srs',JSON.stringify(SRS));}
+
+/* ---------------- helpers ---------------- */
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const ri=n=>Math.floor(Math.random()*n);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* class agreement */
+const CM={I:'в',II:'й',III:'б',PL:'р'};
+const COP={I:'вуго',II:'йиго',III:'буго',PL:'руго'};
+const DEM={I:'дов',II:'дой',III:'доб'};          // «тот»
+function cop(cls){return COP[cls];}
+function selfCls(){return S.gender==='f'?'II':'I';}   // класс говорящего о себе
+function agreeAdj(adjB,cls){return adjB.slice(0,-1)+ (cls==='I'?'в':cls==='II'?'й':cls==='III'?'б':'л');}
+const P=DATA.pools;   // {I:[{av,ru}],II,III,adj}
+
+/* ---------------- audio ---------------- */
+let _audio=null;
+function playAudio(file,btn){
+  if(!file)return;
+  try{ if(_audio){_audio.pause();} _audio=new Audio(file); _audio.play().catch(()=>{});
+    if(btn){btn.textContent='🔊';setTimeout(()=>btn.textContent='▶',700);} }catch(e){}
+}
+
+/* ---------------- toggles ---------------- */
+function applyToggles(){
+  document.body.classList.toggle('hide-ipa',!S.ipa);
+  $('ipaState').textContent=S.ipa?'ON':'OFF';
+  $('tgIpa').classList.toggle('on',S.ipa);
+  $('genState').textContent=S.gender==='m'?'♂ м':'♀ ж';
+  $('tgGen').classList.toggle('on',S.gender==='f');
+}
+function toggleIpa(){S.ipa=!S.ipa;save();applyToggles();}
+function toggleGender(){S.gender=S.gender==='m'?'f':'m';save();applyToggles();renderAll();}
+
+/* ---------------- progress ---------------- */
+function lp(id){return PROG.lessons[id]||(PROG.lessons[id]={seen:false,done:false,a:0,c:0,miss:0});}
+function recLesson(id,ok){const l=lp(id);l.seen=true;l.a++;ok?l.c++:l.miss++;saveProg();}
+function recDrill(key,label,ok){const d=PROG.drill;d.a++;if(ok)d.c++;
+  const e=d.byKey[key]||(d.byKey[key]={a:0,c:0,miss:0,label});e.label=label;e.a++;e[ok?'c':'miss']++;saveProg();}
+function lessonsDone(){return Object.values(PROG.lessons).filter(l=>l.done).length;}
+function acc(){const d=PROG.drill;return d.a?Math.round(100*d.c/d.a):0;}
+
+/* wordbank of every taught item (for cards) */
+function allVocab(){
+  const out=[]; const seen=new Set();
+  DATA.themes.forEach(t=>t.words.forEach(w=>{const k=w.av+'|'+w.ru;if(!seen.has(k)){seen.add(k);out.push({av:w.av,ru:w.ru,tag:t.title});}}));
+  DATA.lessons.forEach(l=>(l.words||[]).forEach(w=>{const k=w.av+'|'+w.ru;if(!seen.has(k)){seen.add(k);out.push({av:w.av,ru:w.ru,tag:l.t});}}));
+  return out;
+}
+
+/* ================= DRILL GENERATORS ================= */
+/* each returns {ru, av, tag} — ru shown, av produced */
+const GEN={
+ alpha(){const x=pick(DATA.special.concat(DATA.alphabet.filter(a=>a.audio)));
+   return {ru:'Как звучит «'+x.L.split(' ')[0]+'»? (пример: '+x.ex+' — '+x.exru+')',
+           av:x.hint+'  ['+x.ipa+']', tag:'звук', audio:x.audio};},
+ copula(){const r=Math.random();
+   if(r<0.5){const c=selfCls();const w=pick(P[c]);
+     return {ru:'Я '+w.ru+(S.gender==='f'?' (ж.)':' (м.)'),av:'Дун '+w.av+' '+cop(c),tag:'вуго/йиго'};}
+   const cls=pick(['I','II','III']);const w=pick(P[cls]);
+   return {ru:(cls==='I'?'Он ':cls==='II'?'Она ':'Это ')+w.ru,av:DEM[cls]+' '+w.av+' '+cop(cls),tag:'классы'};},
+ greet(){const g=pick([
+     {ru:'Здравствуй (девочке)',av:'ЙорчӀами!'},{ru:'Здравствуй (мальчику)',av:'ВорчӀами!'},
+     {ru:'Здравствуйте (многим)',av:'РорчӀами!'},{ru:'Как тебя зовут?',av:'Дуда цӀар щиб?'},
+     {ru:'Спасибо',av:'Баркала'},{ru:'Как дела?',av:'Щиб хӀал бугеб?'},{ru:'Хорошо',av:'ЛъикӀ буго'},
+     {ru:'Я '+(S.gender==='f'?'(девочка)':'(мальчик)')+' — Муса/Аминат',av:'Дун '+(S.gender==='f'?'Аминат йиго':'Муса вуго')}]);
+   return {...g,tag:'приветствие'};},
+ thisis(){const w=pick(P.III);return {ru:'Это '+w.ru,av:'Гьаб '+w.av+' буго',tag:'это…'};},
+ possess(){const cls=pick(['I','II','III']);const w=pick(P[cls]);
+   return {ru:'У меня есть '+w.ru,av:'Дир '+w.av+' '+cop(cls),tag:'дир…'};},
+ adj(){const cls=pick(['I','II','III']);const w=pick(P[cls]);const a=pick(P.adj);
+   return {ru:capital(a.ru)+' '+w.ru,av:agreeAdj(a.av,cls)+' '+w.av+' '+cop(cls),tag:'согласование'};},
+ num(){const num=pick(DATA.numbers);const w=pick(P.III);
+   return {ru:num.ru+' '+plural(w.ru,num.ru),av:num.av+' '+w.av,tag:'счёт'};},
+ verbpres(){const v=pick(DATA.verbs);const who=Math.random()<0.5?{ru:'Я',av:'Дица'}:{ru:'Ты',av:'Дуца'};
+   if(v.obj)return {ru:who.ru+' '+ruObj(v)+' '+v.ru.replace('есть','ем/ешь'),av:who.av+' '+v.obj+' '+v.pres,tag:'наст. время'};
+   return {ru:who.ru+' '+v.ru,av:who.av.replace('Дица','Дун').replace('Дуца','Мун')+' '+v.pres,tag:'наст. время'};},
+ want(){if(Math.random()<0.5){const w=pick(P.III);return {ru:'Я хочу '+w.ru,av:'Дие '+w.av+' бокьун буго',tag:'хочу'};}
+   const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀвела',tag:'могу'};},
+ neg(){if(Math.random()<0.5){const cls=pick(['I','II','III']);const w=pick(P[cls]);
+     return {ru:w.ru[0].toUpperCase()+w.ru.slice(1)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
+   const v=pick(DATA.verbs);return {ru:'Не '+v.ru.replace('есть','ест'),av:v.pres+'ро',tag:'‑ро'};},
+ past(){if(Math.random()<0.6){const c=selfCls();
+     return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'йачӀана':'вачӀана'),tag:'прош. время'};}
+   const v=pick(DATA.verbs.filter(v=>v.obj));return {ru:'Я '+v.ru.replace('есть','съел')+' '+ruObj(v),av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
+ imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Квана!'},
+     {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'}]);return {...g,tag:'просьба'};},
+ quest(){const g=pick([{ru:'что?',av:'щиб?'},{ru:'кто? (о мужчине)',av:'щив?'},{ru:'кто? (о женщине)',av:'щий?'},
+     {ru:'где?',av:'киб?'},{ru:'когда?',av:'кида?'},{ru:'как?',av:'кин?'},{ru:'почему?',av:'щай?'},{ru:'сколько?',av:'чан?'}]);
+   return {...g,tag:'вопрос'};},
+ place(){const g=pick([{ru:'здесь',av:'гьаниб'},{ru:'там',av:'гьениб'},{ru:'сюда',av:'гьанибе'},{ru:'туда',av:'гьанире'},
+     {ru:'Я иду',av:'Дун ине'},{ru:'Она идёт',av:'Дой ине'}]);return {...g,tag:'место'};},
+ talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest()]);},
+ vocab(words){const w=pick(words);return {ru:w.ru,av:w.av,tag:'слова'};},
+};
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function capital(s){return cap(s);}
+function ruObj(v){return v.ru==='читать'?'книгу':v.ru==='писать'?'письмо':v.ru==='есть'?'хлеб':v.ru==='пить'?'воду':'';}
+function plural(ru,num){return ru;} // keep russian noun simple in gloss
+
+function genFor(spec){
+  if(!spec) return GEN.vocab(allVocab());
+  if(spec.gen==='vocab') return GEN.vocab(spec.words&&spec.words.length?spec.words:allVocab());
+  const f=GEN[spec.gen]; return f?f():GEN.vocab(allVocab());
+}
+
+/* ================= INFINITE DRILL WIDGET ================= */
+const drills={};
+function drillHTML(id){return `
+ <div class="stage" id="${id}_stage"></div>
+ <div class="btnrow">
+   <button class="btn blue" onclick="drillShow('${id}')" id="${id}_show">Показать ответ</button>
+   <button class="btn ghost" onclick="drillNew('${id}')">↻ Дальше</button>
+ </div>
+ <div class="grade" id="${id}_grade">
+   <button class="btn blk" style="flex:1" onclick="drillGrade('${id}',0)">Не смог</button>
+   <button class="btn grn" style="flex:1" onclick="drillGrade('${id}',1)">Смог ✓</button>
+ </div>
+ <div class="note" id="${id}_sess" style="text-align:center">0 сделано</div>`;}
+function drillMount(id,spec,key,label){drills[id]={spec,key:key||'G:'+(spec&&spec.gen||'mix'),label:label||'Тренировка',cur:null,shown:false,sess:{a:0,c:0}};drillNew(id);}
+function drillNew(id){const d=drills[id];d.cur=genFor(d.spec);d.shown=false;drillRender(id);}
+function drillRender(id){const d=drills[id],c=d.cur;
+  $(id+'_stage').innerHTML=`<div class="tasktag">${esc(c.tag||'')}</div>
+    <div class="prompt">${esc(c.ru)}</div>`+
+    (d.shown?`<div class="ans">${esc(c.av)}</div>`+(c.audio?`<div><button class="play" onclick="playAudio('${c.audio}',this)">▶</button></div>`:''):'');
+  $(id+'_show').style.display=d.shown?'none':'';
+  $(id+'_grade').classList.toggle('on',d.shown);
+  $(id+'_sess').textContent=d.sess.a+' сделано · '+(d.sess.a?Math.round(100*d.sess.c/d.sess.a):0)+'% верно';
+}
+function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);}
+function drillGrade(id,ok){const d=drills[id];d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,!!ok);drillNew(id);}
+
+/* ================= VIEWS ================= */
+function go(tab){S.tab=tab;save();
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  $('v-'+tab).classList.add('on');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===tab));
+  if(tab==='home')renderHome();
+  window.scrollTo(0,0);
+}
+function renderAll(){renderHome();renderLessons();renderDrill();renderCards();renderRef();}
+
+/* ---- HOME ---- */
+function renderHome(){
+  const total=DATA.lessons.length, done=lessonsDone();
+  const learned=Object.values(SRS).filter(b=>b>=4).length;
+  const next=DATA.lessons.find(l=>!(PROG.lessons[l.id]&&PROG.lessons[l.id].done))||DATA.lessons[DATA.lessons.length-1];
+  // weak spots
+  const weak=Object.entries(PROG.drill.byKey).map(([k,v])=>({k,...v})).filter(x=>x.miss>0)
+    .sort((a,b)=>b.miss-a.miss).slice(0,3);
+  $('v-home').innerHTML=`
+   <div class="card" style="background:linear-gradient(135deg,#1a2a3f,#1a2433)">
+     <div style="font-size:1.7rem" class="av">Дун аварияб мацӀ лъазабулев вуго!</div>
+     <div class="ipa">Dun avarijab macʼ lъazabulev vugo</div>
+     <div class="az">Я учу аварский язык! · переключи ♂/♀ вверху — речь «о себе» изменится</div>
+   </div>
+   <div class="tiles">
+     <div class="tile"><b>${done}/${total}</b><small>уроков</small></div>
+     <div class="tile"><b>${PROG.drill.a}</b><small>тренировок</small></div>
+     <div class="tile"><b>${acc()}%</b><small>верно</small></div>
+   </div>
+   <div class="prog"><i style="width:${Math.round(100*done/total)}%"></i></div>
+   <div class="btnrow" style="margin:12px 0">
+     <button class="btn" onclick="openLesson('${next.id}')">${done?'Продолжить':'Начать'}: ${esc(next.t)}</button>
+     <button class="btn blue" onclick="go('drill')">Тренировка ∞</button>
+   </div>
+   ${weak.length?`<div class="hd"><span class="n">!</span><b>Слабые места</b></div>
+     ${weak.map(w=>`<div class="lesson" onclick="drillJump('${esc(w.k)}','${esc(w.label)}')">
+       <div class="badge">🎯</div><div class="lt"><b>${esc(w.label)}</b><small>ошибок: ${w.miss}</small></div><div class="arrow">↻</div></div>`).join('')}`:''}
+   <div class="card tight"><small>Карточек изучено: <b>${learned}</b> · слов в курсе: <b>${allVocab().length}</b></small>
+     <div style="margin-top:8px"><button class="btn ghost sm" onclick="resetAll()">Сбросить прогресс</button></div></div>`;
+}
+function drillJump(key,label){ // re-drill a weak key: infer gen from lesson id
+  const les=DATA.lessons.find(l=>('L:'+l.id)===key);
+  go('drill'); const spec=les?les.drill:null;
+  drillMount('main',spec,key,label); DR.render();
+}
+function resetAll(){if(confirm('Сбросить весь прогресс и карточки?')){localStorage.removeItem('avk_prog');localStorage.removeItem('avk_srs');location.reload();}}
+
+/* ---- LESSONS ---- */
+function renderLessons(){
+  $('v-lessons').innerHTML=`<h2>Дарсал · Уроки</h2>
+   <p class="lead">Иди по порядку: каждый урок вводит новые слова и сразу даёт их отработать.</p>`+
+   DATA.lessons.map((l,i)=>{const p=PROG.lessons[l.id]||{};
+     return `<div class="lesson ${p.done?'done':p.seen?'started':''}" onclick="openLesson('${l.id}')">
+       <div class="badge">${p.done?'✓':l.emoji}</div>
+       <div class="lt"><b>${i+1}. ${esc(l.t)}</b><small>${esc(l.sub)}</small></div>
+       <div class="arrow">›</div></div>`;}).join('');
+}
+let curLesson=null, lessonSess=null;
+function openLesson(id){const l=DATA.lessons.find(x=>x.id===id);if(!l)return;curLesson=l;lp(id).seen=true;saveProg();
+  go('lessons');
+  const words=(l.words||[]).map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}${w.cls?` <span class="tag">${w.cls==='I'?'кл. I ♂':w.cls==='II'?'кл. II ♀':w.cls==='III'?'кл. III':'мн.'}</span>`:''}</div></div><div class="av">${esc(w.av)}</div></div>`).join('');
+  const ex=(l.ex||[]).map((e,i)=>exHTML(l.id,e,i)).join('');
+  $('v-lessons').innerHTML=`<span class="back" onclick="renderLessons()">‹ Ко всем урокам</span>
+    <h2>${l.emoji} ${esc(l.t)}</h2>
+    <div class="card">${l.teach}</div>
+    ${words?`<div class="hd"><span class="n">Слова</span><b>Новые слова урока</b></div><div class="rowlist">${words}</div>`:''}
+    ${ex?`<div class="hd"><span class="n">✎</span><b>Проверь себя</b></div><div id="lex_wrap">${ex}</div>`:''}
+    ${l.drill?`<div class="hd"><span class="n">∞</span><b>Тренировка по теме</b></div>
+      <p class="lead">Бесконечные задания. Скажи вслух, потом проверь.</p>${drillHTML('lesson')}`:''}
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn grn" onclick="finishLesson('${l.id}')">Урок пройден ✓</button>
+      ${nextLessonBtn(l.id)}</div>`;
+  if(l.drill)drillMount('lesson',l.drill,'L:'+l.id,l.t);
+}
+function nextLessonBtn(id){const i=DATA.lessons.findIndex(l=>l.id===id);const nx=DATA.lessons[i+1];
+  return nx?`<button class="btn" onclick="openLesson('${nx.id}')">Дальше: ${esc(nx.t)} ›</button>`:
+             `<button class="btn blue" onclick="go('drill')">К тренировкам ∞</button>`;}
+function finishLesson(id){const l=lp(id);l.done=true;l.seen=true;saveProg();openLesson(id);
+  const wrap=$('v-lessons');const b=document.createElement('div');b.className='callout g';b.innerHTML='🎉 Урок отмечен пройденным! ЛъикӀ буго!';wrap.insertBefore(b,wrap.firstChild);window.scrollTo(0,0);}
+
+function exHTML(lid,e,i){const eid=lid+'_e'+i;
+  if(e.t==='mcq'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">${esc(e.q)}</div>
+    ${e.opts.map((o,k)=>`<button class="opt" id="${eid}_${k}" onclick="ansMcq('${lid}','${eid}',${k},${e.a})">${esc(o)}</button>`).join('')}
+    <div class="feedback" id="${eid}_fb"></div></div>`;}
+  if(e.t==='say'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">🗣️ ${esc(e.q)}</div>
+    <button class="btn blue sm" onclick="$('${eid}_a').style.display='block'">Показать ответ</button>
+    <div id="${eid}_a" style="display:none;margin-top:8px" class="av">${esc(e.ans)}</div></div>`;}
+  return '';
+}
+function ansMcq(lid,eid,k,a){const ok=k===a;
+  $(eid+'_'+k).classList.add(ok?'correct':'wrong');
+  if(!ok)$(eid+'_'+a).classList.add('correct');
+  const fb=$(eid+'_fb');fb.textContent=ok?'Верно! ✓':'Правильный ответ отмечен зелёным';fb.className='feedback '+(ok?'ok':'no');
+  document.querySelectorAll(`[id^="${eid}_"]`).forEach(b=>{if(b.classList.contains('opt'))b.onclick=null;});
+  recLesson(lid,ok);
+}
+
+/* ---- DRILL TAB ---- */
+const DR={cur:null};
+function renderDrill(){
+  const presets=DATA.lessons.filter(l=>l.drill).map(l=>({key:'L:'+l.id,label:l.t,spec:l.drill,emoji:l.emoji}));
+  presets.unshift({key:'G:all',label:'Все слова (перемешать)',spec:{gen:'vocab',words:[]},emoji:'🎲'});
+  if(!DR.cur)DR.cur=presets[1]||presets[0];
+  $('v-drill').innerHTML=`<h2>Гьунар · Тренировка</h2>
+    <p class="lead">Выбери тему — задания бесконечные. Прочитай вслух, потом «Показать ответ».</p>
+    <div class="chips" id="drchips">${presets.map(p=>`<span class="chip ${DR.cur.key===p.key?'on':''}" onclick="drSet('${p.key}')">${p.emoji} ${esc(p.label)}</span>`).join('')}</div>
+    ${drillHTML('main')}`;
+  DR._presets=presets;
+  drillMount('main',DR.cur.spec,DR.cur.key,DR.cur.label);
+  DR.render=()=>renderDrill();
+}
+function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
+
+/* ---- CARDS (SRS) ---- */
+let deck=[],ci=0,flipped=false,cmode='all';
+function renderCards(){
+  $('v-cards').innerHTML=`<h2>Карталъ · Карточки</h2>
+    <div class="chips">
+      <span class="chip ${cmode==='all'?'on':''}" onclick="cmSet('all')">Все слова</span>
+      ${DATA.themes.map(t=>`<span class="chip ${cmode===t.id?'on':''}" onclick="cmSet('${t.id}')">${t.emoji} ${esc(t.title)}</span>`).join('')}
+    </div>
+    <div id="cardbox"></div>`;
+  buildDeck();showCard();
+}
+function cmSet(m){cmode=m;renderCards();}
+function buildDeck(){
+  let src = cmode==='all'?allVocab():(DATA.themes.find(t=>t.id===cmode)?.words||[]).map(w=>({...w,tag:cmode}));
+  // spaced: prioritise low box
+  deck=shuffle(src).sort((a,b)=>(SRS[a.av+'|'+a.ru]||0)-(SRS[b.av+'|'+b.ru]||0));
+  ci=0;flipped=false;
+}
+function showCard(){
+  const box=$('cardbox');if(!deck.length){box.innerHTML='<div class="card">Нет карточек</div>';return;}
+  const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;const box_=SRS[key]||0;
+  box.innerHTML=`<div class="note" style="text-align:center">${(ci%deck.length)+1} / ${deck.length} · уровень ${box_}</div>
+   <div class="flash" onclick="flipCard()">
+     <div class="kind">${flipped?'аварский':'русский'}</div>
+     <div class="big">${esc(flipped?c.av:c.ru)}</div>
+     ${flipped?`<div class="ipa">${esc(c.tag||'')}</div>`:'<div class="tap">нажми, чтобы перевернуть</div>'}
+   </div>
+   ${flipped?`<div class="btnrow">
+     <button class="btn blk" onclick="gradeCard(0)">Снова</button>
+     <button class="btn" onclick="gradeCard(1)">Норм</button>
+     <button class="btn grn" onclick="gradeCard(2)">Легко</button></div>`:
+     `<div class="btnrow"><button class="btn blue" onclick="flipCard()">Перевернуть</button></div>`}`;
+}
+function flipCard(){flipped=!flipped;showCard();}
+function gradeCard(g){const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;
+  let b=SRS[key]||0; b=g===0?Math.max(0,b-1):g===2?Math.min(5,b+2):Math.min(5,b+1);
+  SRS[key]=b;saveSrs(); ci++;flipped=false;showCard();}
+
+/* ---- REFERENCE ---- */
+let refTab='alpha';
+function renderRef(){
+  $('v-ref').innerHTML=`<h2>Справка</h2>
+   <div class="subtabs">
+     <button class="${refTab==='alpha'?'on':''}" onclick="refSet('alpha')">🔤 Алфавит</button>
+     <button class="${refTab==='phr'?'on':''}" onclick="refSet('phr')">💬 Разговорник</button>
+     <button class="${refTab==='voc'?'on':''}" onclick="refSet('voc')">📖 Словарь</button>
+     <button class="${refTab==='gram'?'on':''}" onclick="refSet('gram')">📐 Грамматика</button>
+   </div><div id="refbody"></div>`;
+  renderRefBody();
+}
+function refSet(t){refTab=t;renderRef();}
+function renderRefBody(){const b=$('refbody');
+  if(refTab==='alpha'){
+    const letterRow=x=>`<div class="letter">
+      <div class="big av">${esc(x.L.split(' ')[0])}</div>
+      <div class="li"><span class="ipa">[${esc(x.ipa)}]</span> · ${esc(x.hint)}
+        <div class="ex">${x.ex?esc(x.ex)+' — '+esc(x.exru):''}</div></div>
+      ${x.audio?`<button class="play" onclick="playAudio('${x.audio}',this)">▶</button>`:`<button class="play off" title="нет образца">▶</button>`}
+    </div>`;
+    b.innerHTML=`<div class="callout b">Нажми ▶, чтобы услышать звук (образцы МФА с Викисклада).</div>
+      <div class="hd"><span class="n">★</span><b>Особые звуки аварского</b></div>
+      ${DATA.special.map(letterRow).join('')}
+      <div class="hd"><span class="n">А</span><b>Весь алфавит</b></div>
+      ${DATA.alphabet.map(letterRow).join('')}`;
+  } else if(refTab==='phr'){
+    b.innerHTML=Object.entries(DATA.phrases).map(([th,arr])=>`<div class="hd"><span class="n">${esc(th[0])}</span><b>${esc(th)}</b></div>
+      <div class="rowlist">${arr.map(p=>`<div class="row"><div class="l"><div class="ru">${esc(p.ru)}</div></div><div class="av">${esc(p.av)}</div></div>`).join('')}</div>`).join('');
+  } else if(refTab==='voc'){
+    b.innerHTML=`<input type="text" id="vocq" placeholder="Поиск (рус. или авар.)…" oninput="vocSearch()" style="margin-bottom:10px">
+      <div id="vocres"></div>`;
+    vocSearch();
+  } else {
+    b.innerHTML=gramHTML();
+  }
+}
+function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
+  const all=allVocab();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
+  const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
+  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="ipa">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}</div></div>`).join('')}</div>`;
+}
+function gramHTML(){return `
+  <div class="hd"><span class="n">1</span><b>Классы (роды)</b></div>
+  <table class="vguide">
+   <tr><td>I ♂ <span class="v">в</span></td><td>мужчины</td><td>Дов вас <b>вуго</b></td></tr>
+   <tr><td>II ♀ <span class="v">й</span></td><td>женщины</td><td>Дой яс <b>йиго</b></td></tr>
+   <tr><td>III <span class="v">б</span></td><td>вещи, животные</td><td>Доб чу <b>буго</b></td></tr>
+   <tr><td>мн. <span class="v">р</span></td><td>много</td><td>Дол лъимал <b>руго</b></td></tr></table>
+  <div class="hd"><span class="n">2</span><b>Местоимения</b></div>
+  <table class="vguide">
+   <tr><td>дун</td><td>я</td><td>дир</td><td>мой</td></tr>
+   <tr><td>мун</td><td>ты</td><td>дур</td><td>твой</td></tr>
+   <tr><td>нилъ / ниж</td><td>мы (вкл./искл.)</td><td>дов/дой/доб</td><td>он/она/оно</td></tr>
+   <tr><td>нуж</td><td>вы</td><td>дица/дуца</td><td>я/ты (эрг.)</td></tr></table>
+  <div class="hd"><span class="n">3</span><b>Глагол: окончания</b></div>
+  <table class="vguide">
+   <tr><td class="v">‑ула/‑уна</td><td>настоящее</td><td>цӀалула «читает»</td></tr>
+   <tr><td class="v">‑ана/‑на</td><td>прошедшее</td><td>цӀалана «читал»</td></tr>
+   <tr><td class="v">‑ила/‑ина</td><td>будущее</td><td>цӀалила «прочтёт»</td></tr>
+   <tr><td class="v">‑ро</td><td>не (наст./буд.)</td><td>цӀалуларо «не читает»</td></tr>
+   <tr><td class="v">‑чӀо</td><td>не (прош.)</td><td>цӀаличӀо «не читал»</td></tr>
+   <tr><td class="v">‑е / ‑а</td><td>приказ</td><td>босе! «возьми!»</td></tr></table>
+  <div class="hd"><span class="n">4</span><b>Числа 1–10</b></div>
+  <table class="vguide">${DATA.numbers.map((x,i)=>`<tr><td class="v">${esc(x.av)}</td><td>${x.ru}</td></tr>`).join('')}</table>
+  <div class="callout g"><b>Эргатив.</b> Кто делает что-то с предметом — с окончанием <b>‑ца</b>:
+    «Ди<b>ца</b> тӀехь цӀалула» (Я читаю книгу). Глагол согласуется не с деятелем, а с предметом.</div>`;
+}
+
+/* ---------------- boot ---------------- */
+applyToggles();renderAll();go(S.tab);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>

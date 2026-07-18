@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#10161f">
+<title>Аварский за час — говорим сразу</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#10161f;--bg2:#161f2c;--card:#1a2433;--card2:#212d3f;
+  --ink:#eef4fb;--muted:#93a4bd;--line:#2b384c;
+  --red:#ef5466;--grn:#33c67d;--gold:#f3b13a;--blue:#57a8ff;--purp:#a78bfa;
+  --av:#ffffff;--ipa:#8fe3b0;--radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;line-height:1.5;padding-bottom:92px}
+a{color:var(--blue)}
+h1,h2,h3{line-height:1.2;margin:0 0 .4em}
+h2{font-size:1.25rem}h3{font-size:1.02rem;color:var(--gold)}
+p{margin:.5em 0}small,.note{color:var(--muted);font-size:.82rem}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+
+header{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);
+  background:rgba(16,22,31,.86);border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 0 8px}
+.hrow{display:flex;align-items:center;gap:10px}
+.logo{font-size:1.6rem;line-height:1}
+.brand b{font-size:.98rem}.brand small{display:block;font-size:.64rem;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.toggles{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tg{font-size:.72rem;border:1px solid var(--line);background:var(--card);color:var(--muted);
+  border-radius:999px;padding:5px 9px;cursor:pointer;user-select:none;white-space:nowrap}
+.tg b{color:var(--ink)}.tg.on{border-color:var(--grn)}.tg.on b{color:var(--ipa)}
+
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:40;display:flex;
+  background:rgba(19,26,38,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;background:none;border:none;color:var(--muted);font-size:.6rem;
+  padding:9px 2px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+nav.tabs .ic{font-size:1.15rem;line-height:1}
+nav.tabs button.on{color:var(--ink);position:relative}
+nav.tabs button.on::after{content:"";position:absolute;top:0;width:26px;height:3px;border-radius:3px;background:var(--red)}
+
+section.view{display:none;padding:16px 0 10px}
+section.view.on{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.av{color:var(--av);font-weight:600}
+.ipa{color:var(--ipa);font-style:italic;font-size:.9rem}
+.az{color:var(--muted);font-size:.85rem}
+.hide-ipa .ipa{display:none!important}
+.vguide{width:100%;border-collapse:collapse;font-size:.9rem;margin:8px 0}
+.vguide td{border:1px solid var(--line);padding:6px 9px;vertical-align:middle}
+.vguide .v{color:var(--gold);font-weight:700}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin:12px 0}
+.card.tight{padding:11px 13px}.card h3:first-child{margin-top:0}
+.hd{display:flex;align-items:center;gap:8px;margin:22px 0 6px}
+.hd .n{font-size:.72rem;color:var(--bg);background:var(--gold);border-radius:6px;padding:2px 7px;font-weight:700}
+.lead{color:var(--muted);font-size:.94rem;margin:.2em 0 .8em}
+
+.rowlist{display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);padding:9px 12px}
+.row .l{min-width:0}.row .ru{font-size:.9rem}.row .ipa{font-size:.8rem}
+.row .av{font-size:1.2rem;text-align:right}
+.row.head{background:var(--card2);color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.5px}
+.tag{display:inline-block;font-size:.62rem;padding:1px 6px;border-radius:5px;background:var(--card2);color:var(--muted);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip{font-size:.8rem;border:1px solid var(--line);background:var(--card2);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--red);border-color:var(--red);color:#fff}
+.chip.g.on{background:var(--grn);border-color:var(--grn)}
+.chip.b.on{background:var(--blue);border-color:var(--blue);color:#04203f}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--red);color:#fff;
+  border:none;border-radius:12px;padding:12px 16px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.btn.grn{background:var(--grn);color:#052}.btn.gold{background:var(--gold);color:#20160a}
+.btn.blk{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.btn.blue{background:var(--blue);color:#04203f}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.4}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}.btnrow .btn{flex:1;min-width:110px}
+.btn.sm{padding:8px 12px;font-size:.82rem;border-radius:10px}
+.play{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;
+  background:var(--blue);color:#04203f;border:none;font-size:.95rem;cursor:pointer;flex:none}
+.play:active{transform:scale(.9)}.play.off{background:var(--card2);color:var(--muted);cursor:default}
+
+.callout{border-left:3px solid var(--line);background:var(--card2);border-radius:0 10px 10px 0;padding:9px 12px;margin:10px 0;font-size:.9rem}
+.callout.g{border-color:var(--grn)}.callout.b{border-color:var(--blue)}.callout.r{border-color:var(--red)}
+
+.prog{height:9px;background:var(--card2);border-radius:6px;overflow:hidden;margin:6px 0}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,var(--grn),var(--blue));width:0}
+.tiles{display:flex;gap:8px;margin:10px 0}
+.tile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.tile b{display:block;font-size:1.4rem;color:var(--gold)}.tile small{font-size:.66rem}
+
+.lesson{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);
+  border-radius:13px;padding:11px 13px;margin:8px 0;cursor:pointer}
+.lesson .badge{width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:1.1rem;flex:none}
+.lesson.done .badge{background:var(--grn);color:#052}.lesson.started .badge{background:var(--gold);color:#20160a}
+.lesson .lt{flex:1;min-width:0}.lesson .lt b{font-size:.98rem}.lesson .lt small{display:block;color:var(--muted);font-size:.76rem}
+.lesson .arrow{color:var(--muted)}
+.back{color:var(--muted);cursor:pointer;font-size:.85rem;display:inline-block;margin:2px 0 6px}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 15px;margin:10px 0;text-align:center;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.stage .tasktag{font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.stage .prompt{font-size:1.35rem;font-weight:600}
+.stage .ans{font-size:1.5rem;color:var(--ipa)}
+.stage .ansru{color:var(--muted);font-size:.95rem}
+.grade{display:none;gap:8px;margin-top:4px}.grade.on{display:flex}
+.opt{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:12px 14px;margin:6px 0;font-size:1rem;cursor:pointer;font-family:inherit}
+.opt.correct{background:var(--grn);color:#052;border-color:var(--grn)}
+.opt.wrong{background:var(--red);color:#fff;border-color:var(--red)}
+.feedback{margin:6px 0;font-weight:600}.feedback.ok{color:var(--grn)}.feedback.no{color:var(--red)}
+
+.flash{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:34px 16px;margin:10px 0;text-align:center;min-height:160px;display:flex;flex-direction:column;justify-content:center;gap:8px;cursor:pointer}
+.flash .kind{font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.flash .big{font-size:1.9rem;font-weight:700}
+.flash .tap{color:var(--muted);font-size:.8rem;margin-top:6px}
+.flash .divider{border-top:1px dashed var(--line);margin:10px 0 4px;padding-top:10px}
+
+input[type=text]{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+  border-radius:12px;padding:12px 14px;font-size:1rem;font-family:inherit}
+input:focus{outline:none;border-color:var(--blue)}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 12px;margin:8px 0}
+summary{cursor:pointer;padding:8px 0;font-weight:600}
+.subtabs{display:flex;gap:6px;overflow-x:auto;margin:2px 0 10px;-webkit-overflow-scrolling:touch}
+.subtabs button{white-space:nowrap;background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.subtabs button.on{background:var(--blue);color:#04203f;border-color:var(--blue)}
+.letter{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin:6px 0}
+.letter .big{font-size:1.5rem;font-weight:700;min-width:56px}
+.letter .li{flex:1;min-width:0}.letter .li .ipa{font-family:ui-monospace,monospace}
+.letter .ex{color:var(--muted);font-size:.82rem}
+</style>
+</head>
+<body>
+<header><div class="wrap hrow">
+  <div class="logo">🏔️</div>
+  <div class="brand"><b>Аварский за час</b><small>Магӏарул мацӀ · для русскоговорящих</small></div>
+  <div class="toggles">
+    <span class="tg on" id="tgIpa" onclick="toggleIpa()">Произн. <b id="ipaState">ON</b></span>
+    <span class="tg" id="tgGen" onclick="toggleGender()">Я <b id="genState">♂ м</b></span>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <section class="view on" id="v-home"></section>
+  <section class="view" id="v-lessons"></section>
+  <section class="view" id="v-drill"></section>
+  <section class="view" id="v-cards"></section>
+  <section class="view" id="v-ref"></section>
+</main>
+
+<nav class="tabs">
+  <button class="on" data-v="home" onclick="go('home')"><span class="ic">🏠</span>Дом</button>
+  <button data-v="lessons" onclick="go('lessons')"><span class="ic">📘</span>Дарсал</button>
+  <button data-v="drill" onclick="go('drill')"><span class="ic">🔁</span>Гьунар</button>
+  <button data-v="cards" onclick="go('cards')"><span class="ic">🎴</span>Карталъ</button>
+  <button data-v="ref" onclick="go('ref')"><span class="ic">📚</span>Справка</button>
+</nav>
+
+<script id="appdata" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('appdata').textContent);
+
+/* ---------------- state ---------------- */
+const S = JSON.parse(localStorage.getItem('avk_state')||'{}');
+if(S.ipa===undefined)S.ipa=true; if(!S.gender)S.gender='m'; if(!S.tab)S.tab='home';
+function save(){localStorage.setItem('avk_state',JSON.stringify(S));}
+const PROG = JSON.parse(localStorage.getItem('avk_prog')||'{}');
+if(!PROG.lessons)PROG.lessons={}; if(!PROG.drill)PROG.drill={a:0,c:0,byKey:{}};
+function saveProg(){localStorage.setItem('avk_prog',JSON.stringify(PROG));}
+const SRS = JSON.parse(localStorage.getItem('avk_srs')||'{}');
+function saveSrs(){localStorage.setItem('avk_srs',JSON.stringify(SRS));}
+
+/* ---------------- helpers ---------------- */
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const ri=n=>Math.floor(Math.random()*n);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* class agreement */
+const CM={I:'в',II:'й',III:'б',PL:'р'};
+const COP={I:'вуго',II:'йиго',III:'буго',PL:'руго'};
+const DEM={I:'дов',II:'дой',III:'доб'};          // «тот»
+function cop(cls){return COP[cls];}
+function selfCls(){return S.gender==='f'?'II':'I';}   // класс говорящего о себе
+function agreeAdj(adjB,cls){return adjB.slice(0,-1)+ (cls==='I'?'в':cls==='II'?'й':cls==='III'?'б':'л');}
+const P=DATA.pools;   // {I:[{av,ru}],II,III,adj}
+
+/* ---------------- audio ---------------- */
+let _audio=null;
+function playAudio(file,btn){
+  if(!file)return;
+  try{ if(_audio){_audio.pause();} _audio=new Audio(file); _audio.play().catch(()=>{});
+    if(btn){btn.textContent='🔊';setTimeout(()=>btn.textContent='▶',700);} }catch(e){}
+}
+
+/* ---------------- toggles ---------------- */
+function applyToggles(){
+  document.body.classList.toggle('hide-ipa',!S.ipa);
+  $('ipaState').textContent=S.ipa?'ON':'OFF';
+  $('tgIpa').classList.toggle('on',S.ipa);
+  $('genState').textContent=S.gender==='m'?'♂ м':'♀ ж';
+  $('tgGen').classList.toggle('on',S.gender==='f');
+}
+function toggleIpa(){S.ipa=!S.ipa;save();applyToggles();}
+function toggleGender(){S.gender=S.gender==='m'?'f':'m';save();applyToggles();renderAll();}
+
+/* ---------------- progress ---------------- */
+function lp(id){return PROG.lessons[id]||(PROG.lessons[id]={seen:false,done:false,a:0,c:0,miss:0});}
+function recLesson(id,ok){const l=lp(id);l.seen=true;l.a++;ok?l.c++:l.miss++;saveProg();}
+function recDrill(key,label,ok){const d=PROG.drill;d.a++;if(ok)d.c++;
+  const e=d.byKey[key]||(d.byKey[key]={a:0,c:0,miss:0,label});e.label=label;e.a++;e[ok?'c':'miss']++;saveProg();}
+function lessonsDone(){return Object.values(PROG.lessons).filter(l=>l.done).length;}
+function acc(){const d=PROG.drill;return d.a?Math.round(100*d.c/d.a):0;}
+
+/* wordbank of every taught item (for cards) */
+function allVocab(){
+  const out=[]; const seen=new Set();
+  DATA.themes.forEach(t=>t.words.forEach(w=>{const k=w.av+'|'+w.ru;if(!seen.has(k)){seen.add(k);out.push({av:w.av,ru:w.ru,tag:t.title});}}));
+  DATA.lessons.forEach(l=>(l.words||[]).forEach(w=>{const k=w.av+'|'+w.ru;if(!seen.has(k)){seen.add(k);out.push({av:w.av,ru:w.ru,tag:l.t});}}));
+  return out;
+}
+
+/* ================= DRILL GENERATORS ================= */
+/* each returns {ru, av, tag} — ru shown, av produced */
+const GEN={
+ alpha(){const x=pick(DATA.special.concat(DATA.alphabet.filter(a=>a.audio)));
+   return {ru:'Как звучит «'+x.L.split(' ')[0]+'»? (пример: '+x.ex+' — '+x.exru+')',
+           av:x.hint+'  ['+x.ipa+']', tag:'звук', audio:x.audio};},
+ copula(){const r=Math.random();
+   if(r<0.5){const c=selfCls();const w=pick(P[c]);
+     return {ru:'Я '+w.ru+(S.gender==='f'?' (ж.)':' (м.)'),av:'Дун '+w.av+' '+cop(c),tag:'вуго/йиго'};}
+   const cls=pick(['I','II','III']);const w=pick(P[cls]);
+   return {ru:(cls==='I'?'Он ':cls==='II'?'Она ':'Это ')+w.ru,av:DEM[cls]+' '+w.av+' '+cop(cls),tag:'классы'};},
+ greet(){const g=pick([
+     {ru:'Здравствуй (девочке)',av:'ЙорчӀами!'},{ru:'Здравствуй (мальчику)',av:'ВорчӀами!'},
+     {ru:'Здравствуйте (многим)',av:'РорчӀами!'},{ru:'Как тебя зовут?',av:'Дуда цӀар щиб?'},
+     {ru:'Спасибо',av:'Баркала'},{ru:'Как дела?',av:'Щиб хӀал бугеб?'},{ru:'Хорошо',av:'ЛъикӀ буго'},
+     {ru:'Я '+(S.gender==='f'?'(девочка)':'(мальчик)')+' — Муса/Аминат',av:'Дун '+(S.gender==='f'?'Аминат йиго':'Муса вуго')}]);
+   return {...g,tag:'приветствие'};},
+ thisis(){const w=pick(P.III);return {ru:'Это '+w.ru,av:'Гьаб '+w.av+' буго',tag:'это…'};},
+ possess(){const cls=pick(['I','II','III']);const w=pick(P[cls]);
+   return {ru:'У меня есть '+w.ru,av:'Дир '+w.av+' '+cop(cls),tag:'дир…'};},
+ adj(){const cls=pick(['I','II','III']);const w=pick(P[cls]);const a=pick(P.adj);
+   return {ru:capital(a.ru)+' '+w.ru,av:agreeAdj(a.av,cls)+' '+w.av+' '+cop(cls),tag:'согласование'};},
+ num(){const num=pick(DATA.numbers);const w=pick(P.III);
+   return {ru:num.ru+' '+plural(w.ru,num.ru),av:num.av+' '+w.av,tag:'счёт'};},
+ verbpres(){const v=pick(DATA.verbs);const who=Math.random()<0.5?{ru:'Я',av:'Дица'}:{ru:'Ты',av:'Дуца'};
+   if(v.obj)return {ru:who.ru+' '+ruObj(v)+' '+v.ru.replace('есть','ем/ешь'),av:who.av+' '+v.obj+' '+v.pres,tag:'наст. время'};
+   return {ru:who.ru+' '+v.ru,av:who.av.replace('Дица','Дун').replace('Дуца','Мун')+' '+v.pres,tag:'наст. время'};},
+ want(){if(Math.random()<0.5){const w=pick(P.III);return {ru:'Я хочу '+w.ru,av:'Дие '+w.av+' бокьун буго',tag:'хочу'};}
+   const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀвела',tag:'могу'};},
+ neg(){if(Math.random()<0.5){const cls=pick(['I','II','III']);const w=pick(P[cls]);
+     return {ru:w.ru[0].toUpperCase()+w.ru.slice(1)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
+   const v=pick(DATA.verbs);return {ru:'Не '+v.ru.replace('есть','ест'),av:v.pres+'ро',tag:'‑ро'};},
+ past(){if(Math.random()<0.6){const c=selfCls();
+     return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'йачӀана':'вачӀана'),tag:'прош. время'};}
+   const v=pick(DATA.verbs.filter(v=>v.obj));return {ru:'Я '+v.ru.replace('есть','съел')+' '+ruObj(v),av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
+ imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Квана!'},
+     {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'}]);return {...g,tag:'просьба'};},
+ quest(){const g=pick([{ru:'что?',av:'щиб?'},{ru:'кто? (о мужчине)',av:'щив?'},{ru:'кто? (о женщине)',av:'щий?'},
+     {ru:'где?',av:'киб?'},{ru:'когда?',av:'кида?'},{ru:'как?',av:'кин?'},{ru:'почему?',av:'щай?'},{ru:'сколько?',av:'чан?'}]);
+   return {...g,tag:'вопрос'};},
+ place(){const g=pick([{ru:'здесь',av:'гьаниб'},{ru:'там',av:'гьениб'},{ru:'сюда',av:'гьанибе'},{ru:'туда',av:'гьанире'},
+     {ru:'Я иду',av:'Дун ине'},{ru:'Она идёт',av:'Дой ине'}]);return {...g,tag:'место'};},
+ talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest()]);},
+ vocab(words){const w=pick(words);return {ru:w.ru,av:w.av,tag:'слова'};},
+};
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function capital(s){return cap(s);}
+function ruObj(v){return v.ru==='читать'?'книгу':v.ru==='писать'?'письмо':v.ru==='есть'?'хлеб':v.ru==='пить'?'воду':'';}
+function plural(ru,num){return ru;} // keep russian noun simple in gloss
+
+function genFor(spec){
+  if(!spec) return GEN.vocab(allVocab());
+  if(spec.gen==='vocab') return GEN.vocab(spec.words&&spec.words.length?spec.words:allVocab());
+  const f=GEN[spec.gen]; return f?f():GEN.vocab(allVocab());
+}
+
+/* ================= INFINITE DRILL WIDGET ================= */
+const drills={};
+function drillHTML(id){return `
+ <div class="stage" id="${id}_stage"></div>
+ <div class="btnrow">
+   <button class="btn blue" onclick="drillShow('${id}')" id="${id}_show">Показать ответ</button>
+   <button class="btn ghost" onclick="drillNew('${id}')">↻ Дальше</button>
+ </div>
+ <div class="grade" id="${id}_grade">
+   <button class="btn blk" style="flex:1" onclick="drillGrade('${id}',0)">Не смог</button>
+   <button class="btn grn" style="flex:1" onclick="drillGrade('${id}',1)">Смог ✓</button>
+ </div>
+ <div class="note" id="${id}_sess" style="text-align:center">0 сделано</div>`;}
+function drillMount(id,spec,key,label){drills[id]={spec,key:key||'G:'+(spec&&spec.gen||'mix'),label:label||'Тренировка',cur:null,shown:false,sess:{a:0,c:0}};drillNew(id);}
+function drillNew(id){const d=drills[id];d.cur=genFor(d.spec);d.shown=false;drillRender(id);}
+function drillRender(id){const d=drills[id],c=d.cur;
+  $(id+'_stage').innerHTML=`<div class="tasktag">${esc(c.tag||'')}</div>
+    <div class="prompt">${esc(c.ru)}</div>`+
+    (d.shown?`<div class="ans">${esc(c.av)}</div>`+(c.audio?`<div><button class="play" onclick="playAudio('${c.audio}',this)">▶</button></div>`:''):'');
+  $(id+'_show').style.display=d.shown?'none':'';
+  $(id+'_grade').classList.toggle('on',d.shown);
+  $(id+'_sess').textContent=d.sess.a+' сделано · '+(d.sess.a?Math.round(100*d.sess.c/d.sess.a):0)+'% верно';
+}
+function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);}
+function drillGrade(id,ok){const d=drills[id];d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,!!ok);drillNew(id);}
+
+/* ================= VIEWS ================= */
+function go(tab){S.tab=tab;save();
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  $('v-'+tab).classList.add('on');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===tab));
+  if(tab==='home')renderHome();
+  window.scrollTo(0,0);
+}
+function renderAll(){renderHome();renderLessons();renderDrill();renderCards();renderRef();}
+
+/* ---- HOME ---- */
+function renderHome(){
+  const total=DATA.lessons.length, done=lessonsDone();
+  const learned=Object.values(SRS).filter(b=>b>=4).length;
+  const next=DATA.lessons.find(l=>!(PROG.lessons[l.id]&&PROG.lessons[l.id].done))||DATA.lessons[DATA.lessons.length-1];
+  // weak spots
+  const weak=Object.entries(PROG.drill.byKey).map(([k,v])=>({k,...v})).filter(x=>x.miss>0)
+    .sort((a,b)=>b.miss-a.miss).slice(0,3);
+  $('v-home').innerHTML=`
+   <div class="card" style="background:linear-gradient(135deg,#1a2a3f,#1a2433)">
+     <div style="font-size:1.7rem" class="av">Дун аварияб мацӀ лъазабулев вуго!</div>
+     <div class="ipa">Dun avarijab macʼ lъazabulev vugo</div>
+     <div class="az">Я учу аварский язык! · переключи ♂/♀ вверху — речь «о себе» изменится</div>
+   </div>
+   <div class="tiles">
+     <div class="tile"><b>${done}/${total}</b><small>уроков</small></div>
+     <div class="tile"><b>${PROG.drill.a}</b><small>тренировок</small></div>
+     <div class="tile"><b>${acc()}%</b><small>верно</small></div>
+   </div>
+   <div class="prog"><i style="width:${Math.round(100*done/total)}%"></i></div>
+   <div class="btnrow" style="margin:12px 0">
+     <button class="btn" onclick="openLesson('${next.id}')">${done?'Продолжить':'Начать'}: ${esc(next.t)}</button>
+     <button class="btn blue" onclick="go('drill')">Тренировка ∞</button>
+   </div>
+   ${weak.length?`<div class="hd"><span class="n">!</span><b>Слабые места</b></div>
+     ${weak.map(w=>`<div class="lesson" onclick="drillJump('${esc(w.k)}','${esc(w.label)}')">
+       <div class="badge">🎯</div><div class="lt"><b>${esc(w.label)}</b><small>ошибок: ${w.miss}</small></div><div class="arrow">↻</div></div>`).join('')}`:''}
+   <div class="card tight"><small>Карточек изучено: <b>${learned}</b> · слов в курсе: <b>${allVocab().length}</b></small>
+     <div style="margin-top:8px"><button class="btn ghost sm" onclick="resetAll()">Сбросить прогресс</button></div></div>`;
+}
+function drillJump(key,label){ // re-drill a weak key: infer gen from lesson id
+  const les=DATA.lessons.find(l=>('L:'+l.id)===key);
+  go('drill'); const spec=les?les.drill:null;
+  drillMount('main',spec,key,label); DR.render();
+}
+function resetAll(){if(confirm('Сбросить весь прогресс и карточки?')){localStorage.removeItem('avk_prog');localStorage.removeItem('avk_srs');location.reload();}}
+
+/* ---- LESSONS ---- */
+function renderLessons(){
+  $('v-lessons').innerHTML=`<h2>Дарсал · Уроки</h2>
+   <p class="lead">Иди по порядку: каждый урок вводит новые слова и сразу даёт их отработать.</p>`+
+   DATA.lessons.map((l,i)=>{const p=PROG.lessons[l.id]||{};
+     return `<div class="lesson ${p.done?'done':p.seen?'started':''}" onclick="openLesson('${l.id}')">
+       <div class="badge">${p.done?'✓':l.emoji}</div>
+       <div class="lt"><b>${i+1}. ${esc(l.t)}</b><small>${esc(l.sub)}</small></div>
+       <div class="arrow">›</div></div>`;}).join('');
+}
+let curLesson=null, lessonSess=null;
+function openLesson(id){const l=DATA.lessons.find(x=>x.id===id);if(!l)return;curLesson=l;lp(id).seen=true;saveProg();
+  go('lessons');
+  const words=(l.words||[]).map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}${w.cls?` <span class="tag">${w.cls==='I'?'кл. I ♂':w.cls==='II'?'кл. II ♀':w.cls==='III'?'кл. III':'мн.'}</span>`:''}</div></div><div class="av">${esc(w.av)}</div></div>`).join('');
+  const ex=(l.ex||[]).map((e,i)=>exHTML(l.id,e,i)).join('');
+  $('v-lessons').innerHTML=`<span class="back" onclick="renderLessons()">‹ Ко всем урокам</span>
+    <h2>${l.emoji} ${esc(l.t)}</h2>
+    <div class="card">${l.teach}</div>
+    ${words?`<div class="hd"><span class="n">Слова</span><b>Новые слова урока</b></div><div class="rowlist">${words}</div>`:''}
+    ${ex?`<div class="hd"><span class="n">✎</span><b>Проверь себя</b></div><div id="lex_wrap">${ex}</div>`:''}
+    ${l.drill?`<div class="hd"><span class="n">∞</span><b>Тренировка по теме</b></div>
+      <p class="lead">Бесконечные задания. Скажи вслух, потом проверь.</p>${drillHTML('lesson')}`:''}
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn grn" onclick="finishLesson('${l.id}')">Урок пройден ✓</button>
+      ${nextLessonBtn(l.id)}</div>`;
+  if(l.drill)drillMount('lesson',l.drill,'L:'+l.id,l.t);
+}
+function nextLessonBtn(id){const i=DATA.lessons.findIndex(l=>l.id===id);const nx=DATA.lessons[i+1];
+  return nx?`<button class="btn" onclick="openLesson('${nx.id}')">Дальше: ${esc(nx.t)} ›</button>`:
+             `<button class="btn blue" onclick="go('drill')">К тренировкам ∞</button>`;}
+function finishLesson(id){const l=lp(id);l.done=true;l.seen=true;saveProg();openLesson(id);
+  const wrap=$('v-lessons');const b=document.createElement('div');b.className='callout g';b.innerHTML='🎉 Урок отмечен пройденным! ЛъикӀ буго!';wrap.insertBefore(b,wrap.firstChild);window.scrollTo(0,0);}
+
+function exHTML(lid,e,i){const eid=lid+'_e'+i;
+  if(e.t==='mcq'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">${esc(e.q)}</div>
+    ${e.opts.map((o,k)=>`<button class="opt" id="${eid}_${k}" onclick="ansMcq('${lid}','${eid}',${k},${e.a})">${esc(o)}</button>`).join('')}
+    <div class="feedback" id="${eid}_fb"></div></div>`;}
+  if(e.t==='say'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">🗣️ ${esc(e.q)}</div>
+    <button class="btn blue sm" onclick="$('${eid}_a').style.display='block'">Показать ответ</button>
+    <div id="${eid}_a" style="display:none;margin-top:8px" class="av">${esc(e.ans)}</div></div>`;}
+  return '';
+}
+function ansMcq(lid,eid,k,a){const ok=k===a;
+  $(eid+'_'+k).classList.add(ok?'correct':'wrong');
+  if(!ok)$(eid+'_'+a).classList.add('correct');
+  const fb=$(eid+'_fb');fb.textContent=ok?'Верно! ✓':'Правильный ответ отмечен зелёным';fb.className='feedback '+(ok?'ok':'no');
+  document.querySelectorAll(`[id^="${eid}_"]`).forEach(b=>{if(b.classList.contains('opt'))b.onclick=null;});
+  recLesson(lid,ok);
+}
+
+/* ---- DRILL TAB ---- */
+const DR={cur:null};
+function renderDrill(){
+  const presets=DATA.lessons.filter(l=>l.drill).map(l=>({key:'L:'+l.id,label:l.t,spec:l.drill,emoji:l.emoji}));
+  presets.unshift({key:'G:all',label:'Все слова (перемешать)',spec:{gen:'vocab',words:[]},emoji:'🎲'});
+  if(!DR.cur)DR.cur=presets[1]||presets[0];
+  $('v-drill').innerHTML=`<h2>Гьунар · Тренировка</h2>
+    <p class="lead">Выбери тему — задания бесконечные. Прочитай вслух, потом «Показать ответ».</p>
+    <div class="chips" id="drchips">${presets.map(p=>`<span class="chip ${DR.cur.key===p.key?'on':''}" onclick="drSet('${p.key}')">${p.emoji} ${esc(p.label)}</span>`).join('')}</div>
+    ${drillHTML('main')}`;
+  DR._presets=presets;
+  drillMount('main',DR.cur.spec,DR.cur.key,DR.cur.label);
+  DR.render=()=>renderDrill();
+}
+function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
+
+/* ---- CARDS (SRS) ---- */
+let deck=[],ci=0,flipped=false,cmode='all';
+function renderCards(){
+  $('v-cards').innerHTML=`<h2>Карталъ · Карточки</h2>
+    <div class="chips">
+      <span class="chip ${cmode==='all'?'on':''}" onclick="cmSet('all')">Все слова</span>
+      ${DATA.themes.map(t=>`<span class="chip ${cmode===t.id?'on':''}" onclick="cmSet('${t.id}')">${t.emoji} ${esc(t.title)}</span>`).join('')}
+    </div>
+    <div id="cardbox"></div>`;
+  buildDeck();showCard();
+}
+function cmSet(m){cmode=m;renderCards();}
+function buildDeck(){
+  let src = cmode==='all'?allVocab():(DATA.themes.find(t=>t.id===cmode)?.words||[]).map(w=>({...w,tag:cmode}));
+  // spaced: prioritise low box
+  deck=shuffle(src).sort((a,b)=>(SRS[a.av+'|'+a.ru]||0)-(SRS[b.av+'|'+b.ru]||0));
+  ci=0;flipped=false;
+}
+function showCard(){
+  const box=$('cardbox');if(!deck.length){box.innerHTML='<div class="card">Нет карточек</div>';return;}
+  const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;const box_=SRS[key]||0;
+  box.innerHTML=`<div class="note" style="text-align:center">${(ci%deck.length)+1} / ${deck.length} · уровень ${box_}</div>
+   <div class="flash" onclick="flipCard()">
+     <div class="kind">${flipped?'аварский':'русский'}</div>
+     <div class="big">${esc(flipped?c.av:c.ru)}</div>
+     ${flipped?`<div class="ipa">${esc(c.tag||'')}</div>`:'<div class="tap">нажми, чтобы перевернуть</div>'}
+   </div>
+   ${flipped?`<div class="btnrow">
+     <button class="btn blk" onclick="gradeCard(0)">Снова</button>
+     <button class="btn" onclick="gradeCard(1)">Норм</button>
+     <button class="btn grn" onclick="gradeCard(2)">Легко</button></div>`:
+     `<div class="btnrow"><button class="btn blue" onclick="flipCard()">Перевернуть</button></div>`}`;
+}
+function flipCard(){flipped=!flipped;showCard();}
+function gradeCard(g){const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;
+  let b=SRS[key]||0; b=g===0?Math.max(0,b-1):g===2?Math.min(5,b+2):Math.min(5,b+1);
+  SRS[key]=b;saveSrs(); ci++;flipped=false;showCard();}
+
+/* ---- REFERENCE ---- */
+let refTab='alpha';
+function renderRef(){
+  $('v-ref').innerHTML=`<h2>Справка</h2>
+   <div class="subtabs">
+     <button class="${refTab==='alpha'?'on':''}" onclick="refSet('alpha')">🔤 Алфавит</button>
+     <button class="${refTab==='phr'?'on':''}" onclick="refSet('phr')">💬 Разговорник</button>
+     <button class="${refTab==='voc'?'on':''}" onclick="refSet('voc')">📖 Словарь</button>
+     <button class="${refTab==='gram'?'on':''}" onclick="refSet('gram')">📐 Грамматика</button>
+   </div><div id="refbody"></div>`;
+  renderRefBody();
+}
+function refSet(t){refTab=t;renderRef();}
+function renderRefBody(){const b=$('refbody');
+  if(refTab==='alpha'){
+    const letterRow=x=>`<div class="letter">
+      <div class="big av">${esc(x.L.split(' ')[0])}</div>
+      <div class="li"><span class="ipa">[${esc(x.ipa)}]</span> · ${esc(x.hint)}
+        <div class="ex">${x.ex?esc(x.ex)+' — '+esc(x.exru):''}</div></div>
+      ${x.audio?`<button class="play" onclick="playAudio('${x.audio}',this)">▶</button>`:`<button class="play off" title="нет образца">▶</button>`}
+    </div>`;
+    b.innerHTML=`<div class="callout b">Нажми ▶, чтобы услышать звук (образцы МФА с Викисклада).</div>
+      <div class="hd"><span class="n">★</span><b>Особые звуки аварского</b></div>
+      ${DATA.special.map(letterRow).join('')}
+      <div class="hd"><span class="n">А</span><b>Весь алфавит</b></div>
+      ${DATA.alphabet.map(letterRow).join('')}`;
+  } else if(refTab==='phr'){
+    b.innerHTML=Object.entries(DATA.phrases).map(([th,arr])=>`<div class="hd"><span class="n">${esc(th[0])}</span><b>${esc(th)}</b></div>
+      <div class="rowlist">${arr.map(p=>`<div class="row"><div class="l"><div class="ru">${esc(p.ru)}</div></div><div class="av">${esc(p.av)}</div></div>`).join('')}</div>`).join('');
+  } else if(refTab==='voc'){
+    b.innerHTML=`<input type="text" id="vocq" placeholder="Поиск (рус. или авар.)…" oninput="vocSearch()" style="margin-bottom:10px">
+      <div id="vocres"></div>`;
+    vocSearch();
+  } else {
+    b.innerHTML=gramHTML();
+  }
+}
+function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
+  const all=allVocab();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
+  const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
+  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="ipa">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}</div></div>`).join('')}</div>`;
+}
+function gramHTML(){return `
+  <div class="hd"><span class="n">1</span><b>Классы (роды)</b></div>
+  <table class="vguide">
+   <tr><td>I ♂ <span class="v">в</span></td><td>мужчины</td><td>Дов вас <b>вуго</b></td></tr>
+   <tr><td>II ♀ <span class="v">й</span></td><td>женщины</td><td>Дой яс <b>йиго</b></td></tr>
+   <tr><td>III <span class="v">б</span></td><td>вещи, животные</td><td>Доб чу <b>буго</b></td></tr>
+   <tr><td>мн. <span class="v">р</span></td><td>много</td><td>Дол лъимал <b>руго</b></td></tr></table>
+  <div class="hd"><span class="n">2</span><b>Местоимения</b></div>
+  <table class="vguide">
+   <tr><td>дун</td><td>я</td><td>дир</td><td>мой</td></tr>
+   <tr><td>мун</td><td>ты</td><td>дур</td><td>твой</td></tr>
+   <tr><td>нилъ / ниж</td><td>мы (вкл./искл.)</td><td>дов/дой/доб</td><td>он/она/оно</td></tr>
+   <tr><td>нуж</td><td>вы</td><td>дица/дуца</td><td>я/ты (эрг.)</td></tr></table>
+  <div class="hd"><span class="n">3</span><b>Глагол: окончания</b></div>
+  <table class="vguide">
+   <tr><td class="v">‑ула/‑уна</td><td>настоящее</td><td>цӀалула «читает»</td></tr>
+   <tr><td class="v">‑ана/‑на</td><td>прошедшее</td><td>цӀалана «читал»</td></tr>
+   <tr><td class="v">‑ила/‑ина</td><td>будущее</td><td>цӀалила «прочтёт»</td></tr>
+   <tr><td class="v">‑ро</td><td>не (наст./буд.)</td><td>цӀалуларо «не читает»</td></tr>
+   <tr><td class="v">‑чӀо</td><td>не (прош.)</td><td>цӀаличӀо «не читал»</td></tr>
+   <tr><td class="v">‑е / ‑а</td><td>приказ</td><td>босе! «возьми!»</td></tr></table>
+  <div class="hd"><span class="n">4</span><b>Числа 1–10</b></div>
+  <table class="vguide">${DATA.numbers.map((x,i)=>`<tr><td class="v">${esc(x.av)}</td><td>${x.ru}</td></tr>`).join('')}</table>
+  <div class="callout g"><b>Эргатив.</b> Кто делает что-то с предметом — с окончанием <b>‑ца</b>:
+    «Ди<b>ца</b> тӀехь цӀалула» (Я читаю книгу). Глагол согласуется не с деятелем, а с предметом.</div>`;
+}
+
+/* ---------------- boot ---------------- */
+applyToggles();renderAll();go(S.tab);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>

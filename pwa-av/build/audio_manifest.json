@@ -1,0 +1,42 @@
+{
+ "а": {
+  "file": "audio/a.mp3",
+  "ipa": "a",
+  "src": "Open front unrounded vowel.ogg"
+ },
+ "е": {
+  "file": "audio/e.mp3",
+  "ipa": "e",
+  "src": "Close-mid front unrounded vowel.ogg"
+ },
+ "и": {
+  "file": "audio/i.mp3",
+  "ipa": "i",
+  "src": "Close front unrounded vowel.ogg"
+ },
+ "д": {
+  "file": "audio/d.mp3",
+  "ipa": "d",
+  "src": "Voiced alveolar plosive.ogg"
+ },
+ "г": {
+  "file": "audio/g.mp3",
+  "ipa": "ɡ",
+  "src": "Voiced velar plosive.ogg"
+ },
+ "гъ": {
+  "file": "audio/gh.mp3",
+  "ipa": "ʁ",
+  "src": "Voiced uvular fricative.ogg"
+ },
+ "гь": {
+  "file": "audio/h.mp3",
+  "ipa": "h",
+  "src": "Voiceless glottal fricative.ogg"
+ },
+ "гӀ": {
+  "file": "audio/gI.mp3",
+  "ipa": "ʕ",
+  "src": "Voiced pharyngeal fricative.ogg"
+ }
+}
