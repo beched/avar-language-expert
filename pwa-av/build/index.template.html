@@ -140,10 +140,18 @@ summary{cursor:pointer;padding:8px 0;font-weight:600}
 .letter .big{font-size:1.5rem;font-weight:700;min-width:56px}
 .letter .li{flex:1;min-width:0}.letter .li .ipa{font-family:ui-monospace,monospace}
 .letter .ex{color:var(--muted);font-size:.82rem}
+.hdrback{background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  width:34px;height:34px;font-size:1.4rem;line-height:1;cursor:pointer;flex:none;font-family:inherit;padding:0}
+.hdrback:active{transform:scale(.94)}
+.fab{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;width:44px;height:44px;
+  border-radius:50%;background:var(--blue);color:#04203f;border:none;font-size:1.3rem;cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+.fab.show{display:flex}.fab:active{transform:scale(.9)}
 </style>
 </head>
 <body>
 <header><div class="wrap hrow">
+  <button id="hdrBack" class="hdrback" style="display:none" onclick="backToLessons()" aria-label="Ко всем урокам">‹</button>
   <div class="logo">🏔️</div>
   <div class="brand"><b>Аварский за час</b><small>Магӏарул мацӀ · для русскоговорящих</small></div>
   <div class="toggles">
@@ -167,6 +175,7 @@ summary{cursor:pointer;padding:8px 0;font-weight:600}
   <button data-v="cards" onclick="go('cards')"><span class="ic">🎴</span>Картал</button>
   <button data-v="ref" onclick="go('ref')"><span class="ic">📚</span>Справка</button>
 </nav>
+<button id="toTop" class="fab" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Наверх">↑</button>
 
 <script id="appdata" type="application/json">__DATA__</script>
 <script>
@@ -329,6 +338,12 @@ const GEN={
    return {ru:nn.ru+' → '+c[0],av:c[1],tag:'местные падежи'};},
  cond(){return {...pick(DATA.conds),tag:'условное'};},
  casemix(){return Math.random()<0.5?GEN.cases():GEN.localcase();},
+ series(){const s=pick(DATA.series);return {ru:s.ru,av:s.av,tag:'местные падежи'};},
+ converb(){return {...pick([
+     {ru:'прочитав (деепр.)',av:'цӀалун'},{ru:'читая (деепр.)',av:'цӀалулаго'},
+     {ru:'чтобы прочитать',av:'цӀализелъун'},{ru:'поскольку есть',av:'бугелъул'},
+     {ru:'когда пришёл',av:'вачӀиндал'},{ru:'пока не прочтёт',av:'цӀализегӀан'},
+     {ru:'хотя есть',av:'бугониги'},{ru:'до того как попало',av:'кквелалде'}]),tag:'связки'};},
  quest(){const g=pick([{ru:'что?',av:'щиб?'},{ru:'кто? (о мужчине)',av:'щив?'},{ru:'кто? (о женщине)',av:'щий?'},
      {ru:'где?',av:'киб?'},{ru:'когда?',av:'кида?'},{ru:'как?',av:'кин?'},{ru:'почему?',av:'щай?'},{ru:'сколько?',av:'чан?'}]);
    return {...g,tag:'вопрос'};},
@@ -417,8 +432,13 @@ function go(tab){S.tab=tab;save();
   $('v-'+tab).classList.add('on');
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===tab));
   if(tab==='home')renderHome();
+  showBack(tab==='lessons'&&lessonOpen);   // keep back arrow only over an open lesson
   window.scrollTo(0,0);
 }
+let lessonOpen=false;
+function showBack(on){const b=$('hdrBack');if(b)b.style.display=on?'':'none';}
+function backToLessons(){renderLessons();window.scrollTo(0,0);}
+if(window.addEventListener)window.addEventListener('scroll',()=>{const f=$('toTop');if(f)f.classList.toggle('show',window.scrollY>320);},{passive:true});
 function renderAll(){renderHome();renderLessons();renderDrill();renderCards();renderRef();}
 
 /* ---- HOME ---- */
@@ -467,14 +487,23 @@ function drillJump(key,label){ // re-drill a weak key: infer gen from lesson id
 function resetAll(){if(confirm('Сбросить весь прогресс и карточки?')){localStorage.removeItem('avk_prog');localStorage.removeItem('avk_srs');location.reload();}}
 
 /* ---- LESSONS ---- */
+const LVL_INFO={A0:{t:'A0 · Звуки',d:'алфавит и произношение'},A1:{t:'A1 · Основы',d:'классы, «есть», семья, числа'},
+  A2:{t:'A2 · Речь',d:'времена, вопросы, повседневное'},B1:{t:'B1 · Продвинутое',d:'формы глагола, падежи, условное'},
+  B2:{t:'B2 · Тонкости',d:'деепричастия, связки, 5 серий падежей'}};
 function renderLessons(){
-  $('v-lessons').innerHTML=`<h2>Дарсал · Уроки</h2>
-   <p class="lead">Иди по порядку: каждый урок вводит новые слова и сразу даёт их отработать.</p>`+
-   DATA.lessons.map((l,i)=>{const p=PROG.lessons[l.id]||{};
-     return `<div class="lesson ${p.done?'done':p.seen?'started':''}" onclick="openLesson('${l.id}')">
+  let html=`<h2>Дарсал · Уроки</h2>
+   <p class="lead">Иди по порядку: каждый урок вводит новые слова и сразу даёт их отработать.
+   Уровни — от A0 (звуки) до B2 (тонкости).</p>`;
+  let lastLvl=null;
+  DATA.lessons.forEach((l,i)=>{const p=PROG.lessons[l.id]||{};
+    if(l.lvl!==lastLvl){lastLvl=l.lvl;const info=LVL_INFO[l.lvl]||{t:l.lvl,d:''};
+      html+=`<div class="hd" style="margin-top:20px"><span class="n">${esc(l.lvl)}</span><b>${esc(info.t.replace(/^\S+ · /,''))}</b> <small style="margin-left:auto">${esc(info.d)}</small></div>`;}
+    html+=`<div class="lesson ${p.done?'done':p.seen?'started':''}" onclick="openLesson('${l.id}')">
        <div class="badge">${p.done?'✓':l.emoji}</div>
        <div class="lt"><b>${i+1}. ${esc(l.t)}</b><small>${esc(l.sub)}</small></div>
-       <div class="arrow">›</div></div>`;}).join('');
+       <div class="arrow">›</div></div>`;});
+  $('v-lessons').innerHTML=html;
+  lessonOpen=false;showBack(false);
 }
 let curLesson=null, lessonSess=null;
 function openLesson(id){const l=DATA.lessons.find(x=>x.id===id);if(!l)return;curLesson=l;lp(id).seen=true;saveProg();
@@ -492,6 +521,7 @@ function openLesson(id){const l=DATA.lessons.find(x=>x.id===id);if(!l)return;cur
       <button class="btn grn" onclick="finishLesson('${l.id}')">Урок пройден ✓</button>
       ${nextLessonBtn(l.id)}</div>`;
   if(l.drill)drillMount('lesson',l.drill,'L:'+l.id,l.t);
+  lessonOpen=true;showBack(true);window.scrollTo(0,0);
 }
 function nextLessonBtn(id){const i=DATA.lessons.findIndex(l=>l.id===id);const nx=DATA.lessons[i+1];
   return nx?`<button class="btn" onclick="openLesson('${nx.id}')">Дальше: ${esc(nx.t)} ›</button>`:
