@@ -47,7 +47,10 @@ OVER = {
  "давать":"кьезе","взять":"босизе","держать":"кквезе","стоять":"чӀезе","сидеть":"гӀодов чӀезе",
  "помощь":"кумек","деньги":"гӀарац","общество":"жамагӀат","цель":"мурад","результат":"хӀасил",
  "тело":"черх","услышать":"рагӀизе","слышать":"рагӀизе",
+ "особенно":"хасго","рядом":"аскӀо","плечо":"гъеж",
 }
+# russian words to drop from the deck (loanword-ish or better explained as a pattern)
+DROP = {"московский","момент","советский","русский","коммунизм","социализм"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -67,11 +70,69 @@ FREQ = Counter()
 for (av,) in cur.execute("SELECT av FROM examples WHERE av IS NOT NULL"):
     for tok in re.split(r"[^а-яёӏ]+", av.lower()):
         if tok: FREQ[k(tok)] += 1
+# lemma frequency: sum the corpus counts of ALL a word's inflected forms (via forms table),
+# so a word's true commonness isn't undercounted by only its base form.
+_FORM2E = {}
+for _form, _eid in cur.execute("SELECT form, entry_id FROM forms"):
+    _FORM2E.setdefault(k(_form), _eid)
+LEMMA_FREQ = Counter()
+for _tok, _c in FREQ.items():
+    _e = _FORM2E.get(_tok)
+    if _e is not None: LEMMA_FREQ[_e] += _c
+def word_freq(av):
+    best = FREQ.get(k(av), 0)
+    for eid in HWID.get(k(av), []):
+        f = LEMMA_FREQ.get(eid, 0)
+        if f > best: best = f
+    return best
 # --- rarity: entries whose relevant sense is bookish/archaic/dialectal/etc. ---
 RARE_RE = re.compile("книжн|устар|редк|поэт|диалект|религи|фольк")
 ENTRY_LABELS = {}
 for eid, lab in cur.execute("SELECT entry_id, labels_json FROM senses"):
     ENTRY_LABELS.setdefault(eid, []).append(lab or "")
+# palochka-PRESERVING key (so цӀакъ 'очень' != цакъ 'зубик' — avoid homonym mixups)
+def kp(s):
+    s = (s or "").lower()
+    for v in "ӏІіIl": s = s.replace(v, "Ӏ")
+    return s
+HWID_EXACT = {}
+for hw, eid in cur.execute("SELECT headword, id FROM entries"):
+    HWID_EXACT.setdefault(kp(hw), []).append(eid)
+
+# --- forms (from entry_json) + one clean usage example per entry ------------
+ENTRY_FORMS = {}
+for eid, ej in cur.execute("SELECT id, entry_json FROM entries"):
+    try:
+        forms = json.loads(ej).get("forms") or []
+        if forms: ENTRY_FORMS[eid] = forms
+    except Exception:
+        pass
+def clean_example(av, ru):
+    av = (av or "").strip(); ru = (ru or "").strip()
+    if not av or not ru: return None
+    if any(c in av for c in "—~…()[]"): return None          # dashes / sense-markers / brackets
+    toks = av.split()
+    if len(toks) < 2 or len(toks[0]) < 2: return None         # truncated (e.g. "б анищ")
+    if not (6 <= len(av) <= 40): return None
+    return (av, ru, len(av))
+EX = {}
+for eid, av, ru in cur.execute("SELECT entry_id, av, ru FROM examples WHERE av IS NOT NULL AND ru IS NOT NULL"):
+    e = clean_example(av, ru)
+    if not e: continue
+    if eid not in EX or e[2] < EX[eid][2]:
+        EX[eid] = e
+
+def forms_of(av):
+    for eid in HWID_EXACT.get(kp(av), []):
+        f = ENTRY_FORMS.get(eid)
+        if f: return f[:6]
+    return None
+def example_of(av):
+    for eid in HWID_EXACT.get(kp(av), []):
+        e = EX.get(eid)
+        if e: return {"av": e[0], "ru": e[1]}
+    return None
+
 # --- reverse index: russian word -> candidate Avar headwords (single word) ---
 REV = {}
 for hw, eid, ru in cur.execute(
@@ -94,37 +155,40 @@ def is_loan(av, ru):
         return True
     return False
 
+def gloss_terms(g):
+    return [t.strip() for t in re.split(r"[;,]", (g or "").lower()) if t.strip()]
+
 def score_av(av, ru):
-    """rank av as a common, correct, non-exotic translation of ru. None if unfit."""
+    """How good is av as the translation of ru? Weighted by WHERE ru sits in the gloss
+    (is it the primary meaning or a minor 5th synonym?). Frequency is only a tie-breaker."""
     rk = ru.lower().strip()
     best = None
     for eid in HWID.get(k(av), []):
         senses = SENSE.get(eid, [])
         labels = ENTRY_LABELS.get(eid, [])
         for pos_i, (si, g) in enumerate(senses):
-            gk = g.lower()
-            exact = (gk == rk) or bool(re.search(r"(^|[ ,;.])"+re.escape(rk)+r"($|[ ,;.])", gk))
-            if not exact and rk not in gk: continue
-            base = 100 if (gk == rk) else 55 if exact else 12
-            if pos_i > 0: base *= 0.5 if exact else 0.15
-            # this sense bookish/archaic/dialectal?
+            terms = gloss_terms(g)
+            if rk not in terms: continue          # must be a real gloss TERM, not a substring
+            j = terms.index(rk)                    # 0 = first/primary term of this sense
+            if pos_i == 0 and j == 0:   base = 100 # ru IS the headword's primary meaning
+            elif pos_i == 0 and j == 1: base = 78
+            elif pos_i == 0:            base = max(0, 55 - j*10)   # buried in 1st sense
+            elif pos_i == 1 and j == 0: base = 62
+            elif pos_i == 1:            base = max(0, 40 - j*8)
+            else:                       base = max(0, 34 - pos_i*4 - j*6)
             lab = labels[si] if si < len(labels) else ""
             if RARE_RE.search(lab or ""): base -= 70
-            base -= max(0, len(av)-8) * 0.6
+            base -= max(0, len(av)-9) * 0.5
             if NATIVE.search(av.lower()): base += 3
             if best is None or base > best: best = base
     if best is None: return None
-    # commonness: how often the word actually occurs in real Avar text
-    fr = FREQ.get(k(av), 0)
-    best += min(45, fr * 1.5)          # strong pull toward common words
-    return best
+    fr = word_freq(av)
+    if fr == 0: best -= 12                          # unattested -> slight distrust
+    best += min(14, fr ** 0.5 * 2.2)                # modest tie-breaker only
+    return best if best >= 50 else None             # require a genuinely good sense match
 
 def best_avar(ru_word, cands):
-    """best common native single-word Avar for ru_word (CSV + reverse-lookup candidates)."""
-    if ru_word in OVER:
-        return None if is_loan(OVER[ru_word], ru_word) else OVER[ru_word]
-    if ru_word in SEED:
-        return None if is_loan(SEED[ru_word], ru_word) else SEED[ru_word]
+    """returns (primary_av, [alt_av...]) — common native words for ru_word, or (None, [])."""
     pool = set(c.strip() for c in cands) | REV.get(ru_word.lower().strip(), set())
     scored = []
     for av in pool:
@@ -132,18 +196,30 @@ def best_avar(ru_word, cands):
         if is_loan(av, ru_word): continue
         s = score_av(av, ru_word)
         if s is None: continue
-        scored.append((s, FREQ.get(k(av), 0), av))
-    if not scored: return None
+        scored.append((s, word_freq(av), av))
     scored.sort(key=lambda x: (-x[0], -x[1]))
-    top = scored[0]
-    # reject exotic picks: if the best word never occurs in the corpus, drop the word
-    if top[1] == 0 and top[0] < 90:
-        return None
-    return top[2]
+    # primary: forced override / seed, else best scored
+    primary = OVER.get(ru_word) or SEED.get(ru_word)
+    if primary and is_loan(primary, ru_word): primary = None
+    if not primary:
+        if not scored: return None, []
+        top = scored[0]
+        if top[1] == 0 and top[0] < 90: return None, []   # reject exotic-only
+        primary = top[2]
+    # alternates: other common (freq>0) synonyms/senses, distinct from primary
+    alts, seen = [], {k(primary)}
+    for s, fr, av in scored:
+        if fr < 3: continue                # only reasonably-used synonyms
+        if k(av) in seen: continue
+        seen.add(k(av)); alts.append(av)
+        if len(alts) >= 3: break
+    return primary, alts
 
+# ============ deck from frequent Russian words -> common Avar equivalents ====
+# (RU->AV: gives real noun/verb/adj coverage a learner wants; picks are ranked by
+#  Avar corpus frequency + primary-sense position, so exotic/wrong-sense words are avoided.)
 FILES = [("nouns", "avnouns.txt.csv"), ("verbs", "avverbs.txt.csv"),
          ("adjs", "avadjvectives.txt.csv"), ("adverbs", "avadverbs.txt.csv")]
-
 resolved = {}
 for pos, fn in FILES:
     out, seen_av = [], set()
@@ -152,54 +228,44 @@ for pos, fn in FILES:
     for row in rows:
         if len(row) < 2: continue
         ru = row[0].strip()
+        if ru in DROP: continue
         cands = [c.strip() for c in row[1].split(",") if c.strip()]
-        av = best_avar(ru, cands)
+        av, alts = best_avar(ru, cands)
         if not av: continue
         av = normpal(av)
-        ak = k(av)
-        if ak in seen_av: continue                   # dedup by avar form
-        seen_av.add(ak)
-        out.append({"ru": ru, "av": av, "pos": pos})
+        if k(av) in seen_av: continue
+        seen_av.add(k(av))
+        entry = {"ru": ru, "av": av, "pos": pos}
+        alts = [normpal(a) for a in alts][:2]
+        if alts: entry["alts"] = alts
+        fm = forms_of(av)
+        if fm and len(fm) > 1: entry["forms"] = [normpal(x) for x in fm]
+        ex = example_of(av)
+        if ex: entry["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
+        out.append(entry)
     resolved[pos] = out
-    print(f"{pos:8s}: {len(out):4d} resolved (of {len(rows)})")
-
-# POS balance ~ real distribution; interleave in frequency order
+    print(f"{pos:8s}: {len(out):4d} resolved")
+# interleave POS to ~real distribution (noun-heavy), in frequency order
 WEIGHT = {"nouns": 55, "verbs": 20, "adjs": 15, "adverbs": 10}
-idx = {p: 0 for p in resolved}
-master = []
-# weighted round-robin
-import itertools
-ticket = []
-for p, w in WEIGHT.items():
-    ticket += [p] * w
-# deterministic interleave: cycle a fixed shuffled-by-weight pattern
 pattern = []
-# build a smooth pattern of length 100 matching weights
 for i in range(100):
-    # pick the pos most "owed" so far
     owed = {p: WEIGHT[p]*(i+1)/100 - pattern.count(p) for p in WEIGHT}
     pattern.append(max(owed, key=owed.get))
+idx = {p: 0 for p in resolved}; deck = []
 pi = 0
-while any(idx[p] < len(resolved[p]) for p in resolved):
+while any(idx[p] < len(resolved[p]) for p in resolved) and len(deck) < 1000:
     p = pattern[pi % 100]; pi += 1
     if idx[p] < len(resolved[p]):
-        master.append(resolved[p][idx[p]]); idx[p] += 1
-    if len(master) >= 1000: break
-
-def lvl(words, a, b):
-    return words[a:b]
-
-n = len(master)
+        deck.append(resolved[p][idx[p]]); idx[p] += 1
+n = len(deck)
 levels = [
-    {"id": "l1", "title": "⭐ Топ-250", "words": master[:250]},
-    {"id": "l2", "title": "⭐⭐ 251–500", "words": master[250:500]},
-    {"id": "l3", "title": "⭐⭐⭐ 501–%d" % n, "words": master[500:n]},
+    {"id": "l1", "title": "⭐ Топ-250", "words": deck[:250]},
+    {"id": "l2", "title": "⭐⭐ 251–500", "words": deck[250:500]},
+    {"id": "l3", "title": "⭐⭐⭐ 501–%d" % n, "words": deck[500:n]},
 ]
-from collections import Counter
 for L in levels:
     c = Counter(w["pos"] for w in L["words"])
     print(L["title"], len(L["words"]), dict(c))
-
 json.dump(levels, open(os.path.join(HERE, "data.freq.json"), "w", encoding="utf-8"),
           ensure_ascii=False, indent=1)
-print("total deck:", sum(len(L["words"]) for L in levels))
+print("total deck (by Avar corpus frequency):", n)

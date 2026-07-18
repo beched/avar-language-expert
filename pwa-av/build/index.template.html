@@ -563,17 +563,22 @@ function renderDrill(){
 function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
 
 /* ---- CARDS (SRS) ---- */
-let deck=[],ci=0,flipped=false,cmode='all';
+let deck=[],ci=0,flipped=false,cmode='all',cardDir='ru2av';
 function everyWord(){
   const out=allVocab(); const seen=new Set(out.map(w=>w.av+'|'+w.ru));
   (DATA.freq||[]).forEach(L=>L.words.forEach(w=>{const key=w.av+'|'+w.ru;
-    if(!seen.has(key)){seen.add(key);out.push({av:w.av,ru:w.ru,tag:L.title});}}));
+    if(!seen.has(key)){seen.add(key);out.push({av:w.av,ru:w.ru,tag:L.title,alts:w.alts});}}));
   return out;
 }
 function renderCards(){
   const freqChips=(DATA.freq||[]).map(L=>`<span class="chip b ${cmode==='freq:'+L.id?'on':''}" onclick="cmSet('freq:${L.id}')">${esc(L.title)} (${L.words.length})</span>`).join('');
   $('v-cards').innerHTML=`<h2>Картал · Карточки</h2>
-    <p class="lead">По частотности (реальный аварский, без русских заимствований) или по темам.</p>
+    <p class="lead">По частотности (реальный аварский, без русских заимствований) или по темам.
+    На обороте — синонимы, формы и пример из словаря.</p>
+    <div class="chips">
+      <span class="chip b ${cardDir==='ru2av'?'on':''}" onclick="cardDirSet('ru2av')">Рус → Авар</span>
+      <span class="chip b ${cardDir==='av2ru'?'on':''}" onclick="cardDirSet('av2ru')">Авар → Рус</span>
+    </div>
     <div class="chips">
       <span class="chip ${cmode==='all'?'on':''}" onclick="cmSet('all')">Все слова</span>
       ${freqChips}
@@ -585,6 +590,7 @@ function renderCards(){
   buildDeck();showCard();
 }
 function cmSet(m){cmode=m;renderCards();}
+function cardDirSet(d){cardDir=d;flipped=false;renderCards();}
 function buildDeck(){
   let src;
   if(cmode==='all') src=everyWord();
@@ -594,14 +600,25 @@ function buildDeck(){
   deck=shuffle(src).sort((a,b)=>(SRS[a.av+'|'+a.ru]||0)-(SRS[b.av+'|'+b.ru]||0));
   ci=0;flipped=false;
 }
+function cardReveal(c){
+  // rich back of the card: pronunciation, synonyms, dictionary forms, usage example
+  let h=`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div>`;
+  if(c.alts&&c.alts.length) h+=`<div class="az" style="margin-top:4px">синонимы: ${c.alts.map(esc).join(', ')}</div>`;
+  if(c.forms&&c.forms.length>1) h+=`<div class="divider"></div><div class="az" style="font-size:.8rem">формы: <span class="av" style="font-weight:400">${c.forms.slice(0,6).map(esc).join(' · ')}</span></div>`;
+  if(c.ex) h+=`<div class="divider"></div><div class="av" style="font-size:1.05rem">${esc(c.ex.av)}</div><div class="az">${esc(c.ex.ru)}</div>`;
+  h+=`<div class="az" style="margin-top:6px;font-size:.72rem">${esc(c.tag||'')}</div>`;
+  return h;
+}
 function showCard(){
   const box=$('cardbox');if(!deck.length){box.innerHTML='<div class="card">Нет карточек</div>';return;}
   const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;const box_=SRS[key]||0;
+  const front = cardDir==='av2ru' ? c.av : c.ru;
+  const back  = cardDir==='av2ru' ? c.ru : c.av;
   box.innerHTML=`<div class="note" style="text-align:center">${(ci%deck.length)+1} / ${deck.length} · уровень ${box_}</div>
    <div class="flash" onclick="flipCard()">
-     <div class="kind">${flipped?'аварский':'русский'}</div>
-     <div class="big">${esc(flipped?c.av:c.ru)}</div>
-     ${flipped?`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div><div class="az">${esc(c.tag||'')}</div>`:'<div class="tap">нажми, чтобы перевернуть</div>'}
+     <div class="kind">${flipped?(cardDir==='av2ru'?'перевод':'аварский'):(cardDir==='av2ru'?'аварский':'русский')}</div>
+     <div class="big">${esc(flipped?back:front)}${(!flipped&&cardDir==='av2ru')?`<div class="ipa" style="font-size:.9rem">[${esc(translit(c.av))}]</div>`:''}</div>
+     ${flipped?cardReveal(c):'<div class="tap">нажми, чтобы перевернуть</div>'}
    </div>
    ${flipped?`<div class="btnrow">
      <button class="btn blk" onclick="gradeCard(0)">Снова</button>
@@ -654,7 +671,7 @@ function renderRefBody(){const b=$('refbody');
 function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
   const all=everyWord();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
   const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
-  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="az">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)} ${pron(w.av)}</div></div>`).join('')}</div>`;
+  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="az">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}${w.alts&&w.alts.length?`<span class="az">, ${w.alts.map(esc).join(', ')}</span>`:''} ${pron(w.av)}</div></div>`).join('')}</div>`;
 }
 function gramHTML(){return `
   <div class="hd"><span class="n">1</span><b>Классы (роды)</b></div>
