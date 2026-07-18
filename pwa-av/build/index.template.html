@@ -293,7 +293,8 @@ const GEN={
    return {ru:'У меня есть '+w.ru,av:'Дир '+w.av+' '+cop(cls),tag:'дир…'};},
  adj(){const cls=pick(['I','II','III']);const w=pick(P[cls]);
    const pool=cls==='III'?P.adj:P.adj.filter(a=>a.p);const a=pick(pool);
-   return {ru:w.ru+' — '+a.ru+' (какой?)',av:agreeAdj(a.av,cls)+' '+w.av+' '+cop(cls),tag:'согласование'};},
+   // predicative: [noun] [agreed adjective] [copula] = «Вас гьитӀинав вуго» (Мальчик маленький)
+   return {ru:cap(w.ru)+' — '+a.ru+' (какой?)',av:cap(w.av)+' '+agreeAdj(a.av,cls)+' '+cop(cls),tag:'сказуемое'};},
  num(){const num=pick(DATA.numbers);const w=pick(P.III);
    return {ru:num.ru+' × '+w.ru,av:num.av+' '+w.av,tag:'счёт'};},
  verbpres(){const v=pick(DATA.verbs);
