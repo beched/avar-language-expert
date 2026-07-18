@@ -74,6 +74,11 @@
   "ipa": "l",
   "src": "Alveolar lateral approximant.ogg"
  },
+ "в": {
+  "file": "audio/w.mp3",
+  "ipa": "w",
+  "src": "Voiced labial-velar approximant.ogg"
+ },
  "й": {
   "file": "audio/j.mp3",
   "ipa": "j",
@@ -104,6 +109,11 @@
   "ipa": "t͡s",
   "src": "Voiceless alveolar sibilant affricate.ogg"
  },
+ "ч": {
+  "file": "audio/ch.mp3",
+  "ipa": "t͡ʃ",
+  "src": "Voiceless palato-alveolar affricate.ogg"
+ },
  "гъ": {
   "file": "audio/gh.mp3",
   "ipa": "ʁ",
@@ -119,6 +129,21 @@
   "ipa": "ʕ",
   "src": "Voiced pharyngeal fricative.ogg"
  },
+ "хӀ": {
+  "file": "audio/hI.mp3",
+  "ipa": "ħ",
+  "src": "Voiceless pharyngeal fricative.ogg"
+ },
+ "х": {
+  "file": "audio/kh.mp3",
+  "ipa": "χ",
+  "src": "Voiceless uvular fricative.ogg"
+ },
+ "хь": {
+  "file": "audio/hy.mp3",
+  "ipa": "x",
+  "src": "Voiceless velar fricative.ogg"
+ },
  "хъ": {
   "file": "audio/qh.mp3",
   "ipa": "q͡χː",
@@ -128,5 +153,45 @@
   "file": "audio/qI.mp3",
   "ipa": "qχʼ",
   "src": "Uvular ejective.ogg"
+ },
+ "кӀ": {
+  "file": "audio/kI.mp3",
+  "ipa": "kʼ",
+  "src": "Velar ejective.ogg"
+ },
+ "тӀ": {
+  "file": "audio/tI.mp3",
+  "ipa": "tʼ",
+  "src": "Alveolar ejective.ogg"
+ },
+ "цӀ": {
+  "file": "audio/tsI.mp3",
+  "ipa": "t͡sʼ",
+  "src": "Alveolar ejective sibilant affricate.ogg"
+ },
+ "чӀ": {
+  "file": "audio/chI.mp3",
+  "ipa": "t͡ʃʼ",
+  "src": "Palato-alveolar ejective affricate.ogg"
+ },
+ "лъ": {
+  "file": "audio/lh.mp3",
+  "ipa": "ɬ",
+  "src": "Voiceless alveolar lateral fricative.ogg"
+ },
+ "лӀ": {
+  "file": "audio/lhI.mp3",
+  "ipa": "t͡ɬː",
+  "src": "Voiceless alveolar lateral affricate.ogg"
+ },
+ "кь": {
+  "file": "audio/kkh.mp3",
+  "ipa": "t͡ɬʼː",
+  "src": "Alveolar lateral ejective affricate.ogg"
+ },
+ "ъ": {
+  "file": "audio/q.mp3",
+  "ipa": "ʔ",
+  "src": "Glottal stop.ogg"
  }
 }

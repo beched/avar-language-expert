@@ -164,7 +164,7 @@ summary{cursor:pointer;padding:8px 0;font-weight:600}
   <button class="on" data-v="home" onclick="go('home')"><span class="ic">🏠</span>Дом</button>
   <button data-v="lessons" onclick="go('lessons')"><span class="ic">📘</span>Дарсал</button>
   <button data-v="drill" onclick="go('drill')"><span class="ic">🔁</span>Гьунар</button>
-  <button data-v="cards" onclick="go('cards')"><span class="ic">🎴</span>Карталъ</button>
+  <button data-v="cards" onclick="go('cards')"><span class="ic">🎴</span>Картал</button>
   <button data-v="ref" onclick="go('ref')"><span class="ic">📚</span>Справка</button>
 </nav>
 
@@ -264,7 +264,7 @@ const GEN={
    return {ru:'Я '+v.presRu,av:'Дун '+v.pres,tag:'наст. время'};},
  want(){if(Math.random()<0.5){const v=pick(DATA.verbs.filter(v=>v.tr));
      return {ru:'Я хочу '+v.objRu,av:'Дие '+v.obj+' бокьун буго',tag:'хочу'};}
-   const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀвела',tag:'могу'};},
+   const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀола',tag:'могу'};},
  neg(){if(Math.random()<0.5){const cls=pick(['I','II','III']);const w=pick(P[cls]);
      return {ru:cap(w.ru)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
    const v=pick(DATA.verbs);return {ru:'Я не '+v.presRu,av:'Дун '+v.pres+'ро',tag:'‑ро'};},
@@ -338,9 +338,11 @@ function renderHome(){
     .sort((a,b)=>b.miss-a.miss).slice(0,3);
   $('v-home').innerHTML=`
    <div class="card" style="background:linear-gradient(135deg,#1a2a3f,#1a2433)">
-     <div style="font-size:1.7rem" class="av">Дун цӀалдохъан ${S.gender==='f'?'йиго':'вуго'}!</div>
-     <div class="ipa">${S.gender==='f'?"dun t͡sʼaldoχːan jigo":"dun t͡sʼaldoχːan wugo"}</div>
-     <div class="az">Я ${S.gender==='f'?'ученица':'ученик'}! · переключи ♂/♀ вверху — речь «о себе» меняется</div>
+     <div style="font-size:1.55rem" class="av">Дица авар мацӀ лъазабулеб буго!</div>
+     <div class="ipa">dit͡sa awar mat͡sʼ ɬazabuleb bugo</div>
+     <div class="az">Я учу аварский язык! · «Дица» (эрг.), ведь у глагола есть объект «мацӀ».</div>
+     <div class="av" style="font-size:1.2rem;margin-top:8px">Дун цӀалдохъан ${S.gender==='f'?'йиго':'вуго'}.</div>
+     <div class="az">Я ${S.gender==='f'?'ученица':'ученик'}. · переключи ♂/♀ вверху — речь «о себе» меняется</div>
    </div>
    <div class="tiles">
      <div class="tile"><b>${done}/${total}</b><small>уроков</small></div>
@@ -434,7 +436,7 @@ function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
 /* ---- CARDS (SRS) ---- */
 let deck=[],ci=0,flipped=false,cmode='all';
 function renderCards(){
-  $('v-cards').innerHTML=`<h2>Карталъ · Карточки</h2>
+  $('v-cards').innerHTML=`<h2>Картал · Карточки</h2>
     <div class="chips">
       <span class="chip ${cmode==='all'?'on':''}" onclick="cmSet('all')">Все слова</span>
       ${DATA.themes.map(t=>`<span class="chip ${cmode===t.id?'on':''}" onclick="cmSet('${t.id}')">${t.emoji} ${esc(t.title)}</span>`).join('')}
@@ -535,7 +537,57 @@ function gramHTML(){return `
   <div class="hd"><span class="n">4</span><b>Числа 1–10</b></div>
   <table class="vguide">${DATA.numbers.map((x,i)=>`<tr><td class="v">${esc(x.av)}</td><td>${x.ru}</td></tr>`).join('')}</table>
   <div class="callout g"><b>Эргатив.</b> Кто делает что-то с предметом — с окончанием <b>‑ца</b>:
-    «Ди<b>ца</b> тӀехь цӀалула» (Я читаю книгу). Глагол согласуется не с деятелем, а с предметом.</div>`;
+    «Ди<b>ца</b> тӀехь цӀалула» (Я читаю книгу). Глагол согласуется не с деятелем, а с предметом.</div>
+
+  <div class="hd"><span class="n">5</span><b>Падежи</b></div>
+  <p class="lead">Основные (грамматические) падежи — на примере «я»:</p>
+  <table class="vguide">
+   <tr><td>Абсолютив</td><td class="v">дун</td><td>я (кто? / кого?)</td></tr>
+   <tr><td>Эргатив ‑ца</td><td class="v">дица</td><td>я (делаю с предметом)</td></tr>
+   <tr><td>Генитив ‑р</td><td class="v">дир</td><td>мой</td></tr>
+   <tr><td>Датив ‑е</td><td class="v">дие</td><td>мне</td></tr></table>
+  <p class="lead">Местные падежи — «где / куда / откуда» (пример: стол, село):</p>
+  <table class="vguide">
+   <tr><td>Эссив (где?) ‑да/‑лъ</td><td class="v">столалда</td><td>на столе · росулъ «в селе»</td></tr>
+   <tr><td>Аллатив (куда?) ‑де</td><td class="v">столалде</td><td>на стол · росулъе «в село»</td></tr>
+   <tr><td>Аблатив (откуда?) ‑са</td><td class="v">столалдаса</td><td>со стола · росулъа «из села»</td></tr></table>
+  <p class="note">У «я» местные формы: <b>дида</b> «у меня», <b>диде</b> «ко мне», <b>дидаса</b> «от меня».
+    Всего в аварском около 20 падежей (много «местных» серий: на, в, у, под…) — но этих хватит, чтобы говорить.</p>
+
+  <div class="hd"><span class="n">6</span><b>Формы глагола (подробно)</b></div>
+  <details><summary>Времена и наклонения</summary>
+   <table class="vguide">
+    <tr><td class="v">‑ула/‑уна</td><td>настоящее</td><td>цӀалула «читает»</td></tr>
+    <tr><td class="v">‑ана/‑на</td><td>прошедшее</td><td>цӀалана «читал»</td></tr>
+    <tr><td class="v">‑ила/‑ина</td><td>будущее</td><td>цӀалила «прочтёт»</td></tr>
+    <tr><td class="v">‑ан</td><td>прош. от наст. («раньше делал»)</td><td>цӀалулаан</td></tr>
+    <tr><td class="v">‑ни</td><td>условное (если)</td><td>цӀалани «если прочтёт»</td></tr>
+    <tr><td class="v">‑арабани</td><td>если бы (нереальное)</td><td>букӀарабани</td></tr>
+    <tr><td class="v">‑ищ</td><td>вопрос</td><td>цӀаланищ? «читал?»</td></tr>
+    <tr><td class="v">‑ге / ‑ги</td><td>запрет / пожелание</td><td>цӀалуге! · вачӀаги «пусть придёт»</td></tr></table></details>
+  <details><summary>Причастия и деепричастия</summary>
+   <table class="vguide">
+    <tr><td class="v">‑еб/‑ев/‑ей/‑ел</td><td>причастие наст.</td><td>цӀалулеб «читающий»</td></tr>
+    <tr><td class="v">‑араб…</td><td>причастие прош.</td><td>цӀалараб «прочитавший»</td></tr>
+    <tr><td class="v">‑чӀеб…</td><td>отриц. причастие</td><td>цӀаличӀеб «не читавший»</td></tr>
+    <tr><td class="v">‑ун/‑н</td><td>деепричастие прош.</td><td>цӀалун «прочитав»</td></tr>
+    <tr><td class="v">‑го</td><td>деепричастие наст.</td><td>цӀалулаго «читая»</td></tr></table></details>
+  <details><summary>Масдар и специальные формы</summary>
+   <table class="vguide">
+    <tr><td class="v">‑и/‑й</td><td>масдар (имя действия)</td><td>цӀали «чтение»</td></tr>
+    <tr><td class="v">‑зелъун</td><td>чтобы</td><td>цӀализелъун «чтобы прочитать»</td></tr>
+    <tr><td class="v">‑зегӀан</td><td>пока не</td><td>цӀализегӀан</td></tr>
+    <tr><td class="v">‑ниги</td><td>хотя</td><td>бугониги «хотя есть»</td></tr>
+    <tr><td class="v">‑идал/‑ндал</td><td>когда</td><td>вачӀиндал «когда пришёл»</td></tr>
+    <tr><td class="v">‑лде</td><td>до того как</td><td>кквелалде</td></tr></table></details>
+  <details><summary>Словообразование и цитата</summary>
+   <table class="vguide">
+    <tr><td class="v">инф.+‑абизе</td><td>каузатив («заставить»)</td><td>цӀализабизе «заставить читать»</td></tr>
+    <tr><td class="v">‑дар/‑ар</td><td>многократность</td><td>хъвадаризе «много писать»</td></tr>
+    <tr><td class="v">‑лъизе</td><td>отымённый глагол</td><td>цолъизе «объединяться»</td></tr>
+    <tr><td class="v">‑ян/‑илан</td><td>цитата («мол»)</td><td>абуна…ян «сказал…»</td></tr></table></details>
+  <div class="callout b"><b>Глагол «ине» (идти)</b> — без классного показателя, одинаков для всех:
+    Дун ине, Дой ине. А «приходить» — с показателем: вачӀине / йачӀине / бачӀине.</div>`;
 }
 
 /* ---------------- boot ---------------- */
