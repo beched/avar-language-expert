@@ -53,14 +53,17 @@ OVER = {
  # verified homonym/sense corrections (broad freq had picked a wrong-sense word):
  "смерть":"хвел","школа":"мактаб","основа":"кьучӀ","знак":"ишара",
  "условие":"шартӀ","внимание":"хал","цвет":"кьер",
+ "мир":"дуниял","человечество":"инсаният","главный":"бетӀераб","искусство":"махщел",
+ "потребность":"къваригӀел","существование":"бетӀербахъи","работник":"хӀалтӀухъан",
+ "цель":"мурад",
 }
 # supplement (AV-frequency) words to skip: directional/redundant forms
-SUPP_DROP = {"цебеса"}
+SUPP_DROP = {"цебеса","лахӀ"}   # лахӀ=сажа/мишень — never a good everyday supplement word
 # force these exact ru->av cards (native-speaker preference among close synonyms)
 MANUAL = {"внутри": "жаниб"}
 # russian words to drop from the deck (loanwords / no clean single-word native equivalent)
 DROP = {"московский","момент","советский","русский","коммунизм","социализм",
-        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер","принимать","срок","труба"}
+        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер","принимать","срок","труба","теория"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -284,9 +287,11 @@ def best_avar(ru_word, cands):
         if s is None: continue
         scored.append((s, word_freq(av), av))
     scored.sort(key=lambda x: (-x[0], -x[1]))
-    # primary: forced override / seed, else best scored
+    # primary: forced override / seed, else best scored. OVER/SEED are HAND-VERIFIED and
+    # trusted absolutely — NOT run through is_loan (which false-positives on native/Arabic
+    # words that happen to be Russian dictionary words too, e.g. 'мурад' is also a RU name,
+    # so is_loan wrongly rejected the verified цель→мурад override).
     primary = OVER.get(ru_word) or SEED.get(ru_word)
-    if primary and is_loan(primary, ru_word): primary = None
     if not primary:
         if not scored: return None, []
         top = scored[0]
