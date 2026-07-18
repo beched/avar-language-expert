@@ -62,14 +62,14 @@ LETTERS = [
 
 def _get(url, timeout):
     """GET with retry/backoff on 429 and transient errors."""
-    for attempt in range(8):
+    for attempt in range(10):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA,
                 "Accept": "*/*", "Referer": "https://commons.wikimedia.org/"})
             return urllib.request.urlopen(req, timeout=timeout).read()
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                wait = 5 * (attempt + 1)
+                wait = min(30, 4 * (attempt + 1))
                 print(f"  429, sleeping {wait}s", file=sys.stderr); time.sleep(wait); continue
             raise
         except Exception:

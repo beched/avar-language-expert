@@ -1,0 +1,58 @@
+# Аварский за час — Avar course PWA (Russian base)
+
+A practical, kids-friendly crash course in **Avar (авар мацӀ)** for Russian speakers,
+modeled on the Emirati-Arabic PWA in `../../pwa`. Single-file, offline, installable.
+
+**Live:** https://beched.github.io/avar-language-expert/ (served from the `gh-pages` branch).
+
+## What it teaches
+15 lessons, A0→A2, with no gaps — every word is introduced in a lesson before it is drilled:
+
+0. Звуки и буквы (alphabet + special consonants, **playable IPA samples**)
+1. Классы и «вуго» (noun classes в/й/б/р + copula)
+2. Салам! (greetings, introductions)
+3. Гьаб/гьеб/доб (this/that is)
+4. Дир/дур (possession, family)
+5. Сифатал (adjectives + class agreement)
+6. РикӀкӀаби (numbers 1–10)
+7. Настоящее время (present ‑ула + ergative ‑ца)
+8. Хочу/могу
+9. Отрицание (гьечӀо / ‑ро / ‑чӀо)
+10. Прошедшее время (‑ана)
+11. Будущее и повеление
+12. Вопросы
+13. Где и куда (ине, directionals)
+14. Говорим! (dialogue)
+
+Plus: infinite self-graded drills, per-lesson quick-checks, SRS flashcards, a weak-spot
+re-drill engine, a phrasebook, a searchable vocabulary, and grammar cheat-sheets.
+
+## The "choose a gender" feature
+The ♂/♀ toggle sets the **learner's noun class** (I «в» / II «й»). Everything the learner
+says about themselves agrees: `Дун … вуго`↔`йиго`, `вачӀана`↔`йачӀана`. Drills also throw
+in randomized addressee-gender examples (`ВорчӀами!`/`ЙорчӀами!`).
+
+## Data provenance & correctness
+- Vocabulary (200 themed words) hand-curated and **verified against `../avar.db`** (22.8k-entry
+  Avar↔Russian dictionary with 36.8k example sentences). See `build/verify_lex.py`.
+- Grammar follows `../notes.md`, the Alekseev/Madieva reference grammars, and the official
+  grade 1–4 school program; every Avar token in the app is corpus-attested.
+- Palochka normalized to `Ӏ` (U+04C0) everywhere.
+- IPA phoneme audio: Wikimedia Commons samples, transcoded to mp3 (iOS-safe).
+
+## Build (`build/`)
+```
+python3 lexicon.py        # emit verified themed vocabulary -> data.lex.json
+python3 verify_lex.py      # cross-check every Avar word against avar.db
+python3 fetch_audio.py     # download + transcode IPA samples (API)  \
+python3 fetch_curl.py      #   ... or curl md5 paths for the rest      } -> audio/*.mp3
+python3 make_icons.py      # generate app icons
+python3 build.py           # inline DATA into index.template.html -> ../index.html
+node   test_run.js         # headless smoke test (views, generators, drills, cards, ref)
+```
+`index.html` is generated — edit `index.template.html` (UI/engine) and `build.py` (content),
+then rebuild. Bump the `CACHE` name in `sw.js` on every content change.
+
+## localStorage / SW namespacing
+Keys are `avk_state` / `avk_prog` / `avk_srs`; SW cache `avar-course-v1`. Distinct from the
+Arabic app's `emi_*` / `emirati-arabic-v4`, so both can coexist on `beched.github.io`.

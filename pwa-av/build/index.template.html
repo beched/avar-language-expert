@@ -338,9 +338,9 @@ function renderHome(){
     .sort((a,b)=>b.miss-a.miss).slice(0,3);
   $('v-home').innerHTML=`
    <div class="card" style="background:linear-gradient(135deg,#1a2a3f,#1a2433)">
-     <div style="font-size:1.7rem" class="av">Дун аварияб мацӀ лъазабулев вуго!</div>
-     <div class="ipa">Dun avarijab macʼ lъazabulev vugo</div>
-     <div class="az">Я учу аварский язык! · переключи ♂/♀ вверху — речь «о себе» изменится</div>
+     <div style="font-size:1.7rem" class="av">Дун цӀалдохъан ${S.gender==='f'?'йиго':'вуго'}!</div>
+     <div class="ipa">${S.gender==='f'?"dun t͡sʼaldoχːan jigo":"dun t͡sʼaldoχːan wugo"}</div>
+     <div class="az">Я ${S.gender==='f'?'ученица':'ученик'}! · переключи ♂/♀ вверху — речь «о себе» меняется</div>
    </div>
    <div class="tiles">
      <div class="tile"><b>${done}/${total}</b><small>уроков</small></div>

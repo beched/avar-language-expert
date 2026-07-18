@@ -14,15 +14,95 @@
   "ipa": "i",
   "src": "Close front unrounded vowel.ogg"
  },
+ "о": {
+  "file": "audio/o.mp3",
+  "ipa": "o",
+  "src": "Close-mid back rounded vowel.ogg"
+ },
+ "у": {
+  "file": "audio/u.mp3",
+  "ipa": "u",
+  "src": "Close back rounded vowel.ogg"
+ },
+ "б": {
+  "file": "audio/b.mp3",
+  "ipa": "b",
+  "src": "Voiced bilabial plosive.ogg"
+ },
+ "п": {
+  "file": "audio/p.mp3",
+  "ipa": "p",
+  "src": "Voiceless bilabial plosive.ogg"
+ },
  "д": {
   "file": "audio/d.mp3",
   "ipa": "d",
   "src": "Voiced alveolar plosive.ogg"
  },
+ "т": {
+  "file": "audio/t.mp3",
+  "ipa": "t",
+  "src": "Voiceless alveolar plosive.ogg"
+ },
  "г": {
   "file": "audio/g.mp3",
   "ipa": "ɡ",
   "src": "Voiced velar plosive.ogg"
+ },
+ "к": {
+  "file": "audio/k.mp3",
+  "ipa": "k",
+  "src": "Voiceless velar plosive.ogg"
+ },
+ "м": {
+  "file": "audio/m.mp3",
+  "ipa": "m",
+  "src": "Bilabial nasal.ogg"
+ },
+ "н": {
+  "file": "audio/n.mp3",
+  "ipa": "n",
+  "src": "Alveolar nasal.ogg"
+ },
+ "р": {
+  "file": "audio/r.mp3",
+  "ipa": "r",
+  "src": "Alveolar trill.ogg"
+ },
+ "л": {
+  "file": "audio/l.mp3",
+  "ipa": "l",
+  "src": "Alveolar lateral approximant.ogg"
+ },
+ "й": {
+  "file": "audio/j.mp3",
+  "ipa": "j",
+  "src": "Palatal approximant.ogg"
+ },
+ "с": {
+  "file": "audio/s.mp3",
+  "ipa": "s",
+  "src": "Voiceless alveolar sibilant.ogg"
+ },
+ "з": {
+  "file": "audio/z.mp3",
+  "ipa": "z",
+  "src": "Voiced alveolar sibilant.ogg"
+ },
+ "ш": {
+  "file": "audio/sh.mp3",
+  "ipa": "ʃ",
+  "src": "Voiceless palato-alveolar sibilant.ogg"
+ },
+ "ж": {
+  "file": "audio/zh.mp3",
+  "ipa": "ʒ",
+  "src": "Voiced palato-alveolar sibilant.ogg"
+ },
+ "ц": {
+  "file": "audio/ts.mp3",
+  "ipa": "t͡s",
+  "src": "Voiceless alveolar sibilant affricate.ogg"
  },
  "гъ": {
   "file": "audio/gh.mp3",
@@ -38,5 +118,15 @@
   "file": "audio/gI.mp3",
   "ipa": "ʕ",
   "src": "Voiced pharyngeal fricative.ogg"
+ },
+ "хъ": {
+  "file": "audio/qh.mp3",
+  "ipa": "q͡χː",
+  "src": "Voiceless uvular plosive.ogg"
+ },
+ "къ": {
+  "file": "audio/qI.mp3",
+  "ipa": "qχʼ",
+  "src": "Uvular ejective.ogg"
  }
 }
