@@ -241,8 +241,8 @@ const GEN={
    return {ru:'Как звучит «'+x.L.split(' ')[0]+'»? (пример: '+x.ex+' — '+x.exru+')',
            av:x.hint+'  ['+x.ipa+']', tag:'звук', audio:x.audio};},
  copula(){const r=Math.random();
-   if(r<0.5){const c=selfCls();const w=pick(P[c]);
-     return {ru:'Я '+w.ru+(S.gender==='f'?' (ж.)':' (м.)'),av:'Дун '+w.av+' '+cop(c),tag:'вуго/йиго'};}
+   if(r<0.5){const c=selfCls();const w=pick(c==='II'?P.selfII:P.selfI);
+     return {ru:'Я '+w.ru,av:'Дун '+w.av+' '+cop(c),tag:'вуго/йиго'};}
    const cls=pick(['I','II','III']);const w=pick(P[cls]);
    return {ru:(cls==='I'?'Он ':cls==='II'?'Она ':'Это ')+w.ru,av:DEM[cls]+' '+w.av+' '+cop(cls),tag:'классы'};},
  greet(){const g=pick([
@@ -254,21 +254,23 @@ const GEN={
  thisis(){const w=pick(P.III);return {ru:'Это '+w.ru,av:'Гьаб '+w.av+' буго',tag:'это…'};},
  possess(){const cls=pick(['I','II','III']);const w=pick(P[cls]);
    return {ru:'У меня есть '+w.ru,av:'Дир '+w.av+' '+cop(cls),tag:'дир…'};},
- adj(){const cls=pick(['I','II','III']);const w=pick(P[cls]);const a=pick(P.adj);
-   return {ru:capital(a.ru)+' '+w.ru,av:agreeAdj(a.av,cls)+' '+w.av+' '+cop(cls),tag:'согласование'};},
+ adj(){const cls=pick(['I','II','III']);const w=pick(P[cls]);
+   const pool=cls==='III'?P.adj:P.adj.filter(a=>a.p);const a=pick(pool);
+   return {ru:w.ru+' — '+a.ru+' (какой?)',av:agreeAdj(a.av,cls)+' '+w.av+' '+cop(cls),tag:'согласование'};},
  num(){const num=pick(DATA.numbers);const w=pick(P.III);
-   return {ru:num.ru+' '+plural(w.ru,num.ru),av:num.av+' '+w.av,tag:'счёт'};},
- verbpres(){const v=pick(DATA.verbs);const who=Math.random()<0.5?{ru:'Я',av:'Дица'}:{ru:'Ты',av:'Дуца'};
-   if(v.obj)return {ru:who.ru+' '+ruObj(v)+' '+v.ru.replace('есть','ем/ешь'),av:who.av+' '+v.obj+' '+v.pres,tag:'наст. время'};
-   return {ru:who.ru+' '+v.ru,av:who.av.replace('Дица','Дун').replace('Дуца','Мун')+' '+v.pres,tag:'наст. время'};},
- want(){if(Math.random()<0.5){const w=pick(P.III);return {ru:'Я хочу '+w.ru,av:'Дие '+w.av+' бокьун буго',tag:'хочу'};}
+   return {ru:num.ru+' × '+w.ru,av:num.av+' '+w.av,tag:'счёт'};},
+ verbpres(){const v=pick(DATA.verbs);
+   if(v.tr)return {ru:'Я '+v.presRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.pres,tag:'наст. время'};
+   return {ru:'Я '+v.presRu,av:'Дун '+v.pres,tag:'наст. время'};},
+ want(){if(Math.random()<0.5){const v=pick(DATA.verbs.filter(v=>v.tr));
+     return {ru:'Я хочу '+v.objRu,av:'Дие '+v.obj+' бокьун буго',tag:'хочу'};}
    const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀвела',tag:'могу'};},
  neg(){if(Math.random()<0.5){const cls=pick(['I','II','III']);const w=pick(P[cls]);
-     return {ru:w.ru[0].toUpperCase()+w.ru.slice(1)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
-   const v=pick(DATA.verbs);return {ru:'Не '+v.ru.replace('есть','ест'),av:v.pres+'ро',tag:'‑ро'};},
- past(){if(Math.random()<0.6){const c=selfCls();
+     return {ru:cap(w.ru)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
+   const v=pick(DATA.verbs);return {ru:'Я не '+v.presRu,av:'Дун '+v.pres+'ро',tag:'‑ро'};},
+ past(){if(Math.random()<0.55){const c=selfCls();
      return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'йачӀана':'вачӀана'),tag:'прош. время'};}
-   const v=pick(DATA.verbs.filter(v=>v.obj));return {ru:'Я '+v.ru.replace('есть','съел')+' '+ruObj(v),av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
+   const v=pick(DATA.verbs.filter(v=>v.tr));return {ru:'Я '+v.pastRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
  imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Квана!'},
      {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'}]);return {...g,tag:'просьба'};},
  quest(){const g=pick([{ru:'что?',av:'щиб?'},{ru:'кто? (о мужчине)',av:'щив?'},{ru:'кто? (о женщине)',av:'щий?'},
