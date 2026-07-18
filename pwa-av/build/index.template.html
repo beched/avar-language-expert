@@ -565,9 +565,12 @@ function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
 /* ---- CARDS (SRS) ---- */
 let deck=[],ci=0,flipped=false,cmode='all',cardDir='ru2av';
 function everyWord(){
-  const out=allVocab(); const seen=new Set(out.map(w=>w.av+'|'+w.ru));
+  const out=allVocab(); const map=new Map(out.map(w=>[w.av+'|'+w.ru,w]));
   (DATA.freq||[]).forEach(L=>L.words.forEach(w=>{const key=w.av+'|'+w.ru;
-    if(!seen.has(key)){seen.add(key);out.push({av:w.av,ru:w.ru,tag:L.title,alts:w.alts});}}));
+    const e=map.get(key);
+    if(e){ if(w.ex&&!e.ex)e.ex=w.ex; if(w.forms&&!e.forms)e.forms=w.forms; if(w.alts&&!e.alts)e.alts=w.alts; }
+    else { const n={...w,tag:L.title}; map.set(key,n); out.push(n); }
+  }));
   return out;
 }
 function renderCards(){

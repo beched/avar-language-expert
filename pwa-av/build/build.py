@@ -923,7 +923,11 @@ DATA = {
  "numbers": [{"av":n(a),"ru":r} for a,r in NUMBERS],
  "themes": LEX,
  "freq": [{"id": L["id"], "title": L["title"],
-           "words": [{"av": n(w["av"]), "ru": w["ru"], "pos": w["pos"]} for w in L["words"]]}
+           "words": [{"av": n(w["av"]), "ru": w["ru"], "pos": w["pos"],
+                      **({"alts": [n(a) for a in w["alts"]]} if w.get("alts") else {}),
+                      **({"forms": [n(x) for x in w["forms"]]} if w.get("forms") else {}),
+                      **({"ex": {"av": n(w["ex"]["av"]), "ru": w["ex"]["ru"]}} if w.get("ex") else {})}
+                     for w in L["words"]]}
           for L in FREQ],
  "lessons": LESSONS,
  "phrases": {k:[{"av":n(a),"ru":r} for a,r in v] for k,v in PHRASES.items()},
