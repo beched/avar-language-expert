@@ -350,14 +350,14 @@ const GEN={
  place(){const g=pick([{ru:'здесь',av:'гьаниб'},{ru:'там',av:'гьениб'},{ru:'сюда',av:'гьанибе'},{ru:'туда',av:'гьанире'},
      {ru:'Я иду',av:'Дун ине'},{ru:'Она идёт',av:'Дой ине'}]);return {...g,tag:'место'};},
  loan(){return {...pick([
-     {ru:'Я хочу проверить (провер‑изе)',av:'Дие бокьун буго проверизе'},
-     {ru:'Я хочу погуглить (гугл‑изе)',av:'Дие бокьун буго гуглизе'},
+     {ru:'Я хочу проверить (провер‑изе)',av:'Дие проверизе бокьун буго'},
+     {ru:'Я хочу погуглить (гугл‑изе)',av:'Дие гуглизе бокьун буго'},
      {ru:'сделать ремонт',av:'ремонт гьабизе'},
      {ru:'позвонить (звонок сделать)',av:'звонок гьабизе'},
      {ru:'в документе',av:'документалда'},{ru:'в интернете',av:'интернеталда'},
      {ru:'что написано? (написано ли)',av:'Щиб хъван бугебали?'},
      {ru:'например',av:'масала'},{ru:'но, однако',av:'амма'},{ru:'или',av:'яги'},
-     {ru:'потом, затем',av:'цинги'},{ru:'конечно',av:'узухъда'},{ru:'значит, поэтому',av:'гьединлъидал'}]),tag:'заимствования'};},
+     {ru:'потом, затем',av:'цинги'},{ru:'конечно',av:'узухъда'},{ru:'поэтому, значит',av:'гьединлъидал'}]),tag:'заимствования'};},
  talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest(),GEN.loan()]);},
  vocab(words){const w=pick(words);return {ru:w.ru,av:w.av,tag:'слова'};},
 };
@@ -623,13 +623,14 @@ function showCard(){
      <div class="big">${esc(flipped?back:front)}${(!flipped&&cardDir==='av2ru')?`<div class="ipa" style="font-size:.9rem">[${esc(translit(c.av))}]</div>`:''}</div>
      ${flipped?cardReveal(c):'<div class="tap">нажми, чтобы перевернуть</div>'}
    </div>
-   ${flipped?`<div class="btnrow">
+   ${flipped?`<div class="btnrow" id="cardGrade">
      <button class="btn blk" onclick="gradeCard(0)">Снова</button>
      <button class="btn" onclick="gradeCard(1)">Норм</button>
      <button class="btn grn" onclick="gradeCard(2)">Легко</button></div>`:
      `<div class="btnrow"><button class="btn blue" onclick="flipCard()">Перевернуть</button></div>`}`;
 }
-function flipCard(){flipped=!flipped;showCard();}
+function flipCard(){flipped=!flipped;showCard();
+  if(flipped){const g=$('cardGrade'); if(g&&g.scrollIntoView)setTimeout(()=>g.scrollIntoView({behavior:'smooth',block:'end'}),40);}}
 function gradeCard(g){const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;
   let b=SRS[key]||0; b=g===0?Math.max(0,b-1):g===2?Math.min(5,b+2):Math.min(5,b+1);
   SRS[key]=b;saveSrs(); recDay();saveProg(); ci++;flipped=false;showCard();}

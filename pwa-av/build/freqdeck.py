@@ -48,9 +48,11 @@ OVER = {
  "помощь":"кумек","деньги":"гӀарац","общество":"жамагӀат","цель":"мурад","результат":"хӀасил",
  "тело":"черх","услышать":"рагӀизе","слышать":"рагӀизе",
  "особенно":"хасго","рядом":"аскӀо","плечо":"гъеж",
+ "становиться":"лъугьине","единство":"цолъи","цена":"багьа",
 }
-# russian words to drop from the deck (loanword-ish or better explained as a pattern)
-DROP = {"московский","момент","советский","русский","коммунизм","социализм"}
+# russian words to drop from the deck (loanwords / no clean single-word native equivalent)
+DROP = {"московский","момент","советский","русский","коммунизм","социализм",
+        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -86,10 +88,10 @@ def word_freq(av):
         if f > best: best = f
     return best
 # --- rarity: entries whose relevant sense is bookish/archaic/dialectal/etc. ---
-RARE_RE = re.compile("книжн|устар|редк|поэт|диалект|религи|фольк")
-ENTRY_LABELS = {}
-for eid, lab in cur.execute("SELECT entry_id, labels_json FROM senses"):
-    ENTRY_LABELS.setdefault(eid, []).append(lab or "")
+RARE_RE = re.compile("книжн|устар|редк|поэт|диалект|религи|фольк|детск|бранн|пренебр")
+LABELS = {}                       # (entry_id, sense_idx) -> labels_json  (sense_idx is 1-based!)
+for eid, si, lab in cur.execute("SELECT entry_id, sense_idx, labels_json FROM senses"):
+    LABELS[(eid, si)] = lab or ""
 # palochka-PRESERVING key (so цӀакъ 'очень' != цакъ 'зубик' — avoid homonym mixups)
 def kp(s):
     s = (s or "").lower()
@@ -142,11 +144,19 @@ for hw, eid, ru in cur.execute(
         term = term.strip()
         if term: REV.setdefault(term, set()).add(hw)
 
+# set of Russian words (from all dictionary glosses) — to catch Avar "words" that
+# are really Russian loans (автомобиль, машина, телефон…) regardless of their gloss.
+RU_WORDS = set()
+for _t, _hws in REV.items():
+    for _w in _t.split():
+        if len(_w) >= 5 and re.fullmatch(r"[а-яё]+", _w): RU_WORDS.add(_w)
 def is_loan(av, ru):
     ak, rk = k(av), k(ru.lower())
     if not ak or not rk: return True
     if ak == rk: return True
-    if NATIVE.search(av.lower()): return False
+    if NATIVE.search(av.lower()): return False       # has native letters -> genuine Avar
+    # no native letters: a Russian loanword if it IS a Russian dictionary word (len>=5)
+    if len(ak) >= 5 and av.lower() in RU_WORDS: return True
     cp = 0
     for a, b in zip(ak, rk):
         if a == b: cp += 1
@@ -165,7 +175,6 @@ def score_av(av, ru):
     best = None
     for eid in HWID.get(k(av), []):
         senses = SENSE.get(eid, [])
-        labels = ENTRY_LABELS.get(eid, [])
         for pos_i, (si, g) in enumerate(senses):
             terms = gloss_terms(g)
             if rk not in terms: continue          # must be a real gloss TERM, not a substring
@@ -176,8 +185,8 @@ def score_av(av, ru):
             elif pos_i == 1 and j == 0: base = 62
             elif pos_i == 1:            base = max(0, 40 - j*8)
             else:                       base = max(0, 34 - pos_i*4 - j*6)
-            lab = labels[si] if si < len(labels) else ""
-            if RARE_RE.search(lab or ""): base -= 70
+            lab = LABELS.get((eid, si), "")        # correct sense's label (sense_idx-keyed)
+            if RARE_RE.search(lab): base -= 70
             base -= max(0, len(av)-9) * 0.5
             if NATIVE.search(av.lower()): base += 3
             if best is None or base > best: best = base
@@ -204,7 +213,9 @@ def best_avar(ru_word, cands):
     if not primary:
         if not scored: return None, []
         top = scored[0]
-        if top[1] == 0 and top[0] < 90: return None, []   # reject exotic-only
+        # require the word to actually be USED in the corpus (drops rare literary Arabisms
+        # like таварих=2, вилаят=1, машгъуллъизе=1). OVER/SEED words bypass this.
+        if top[1] < 4: return None, []
         primary = top[2]
     # alternates: other common (freq>0) synonyms/senses, distinct from primary
     alts, seen = [], {k(primary)}
@@ -257,6 +268,57 @@ while any(idx[p] < len(resolved[p]) for p in resolved) and len(deck) < 1000:
     p = pattern[pi % 100]; pi += 1
     if idx[p] < len(resolved[p]):
         deck.append(resolved[p][idx[p]]); idx[p] += 1
+# ---- supplement: most FREQUENT Avar CONTENT-word lemmas from the corpus -----
+# (fills the deck with genuinely common words that the RU->AV pass didn't cover)
+seen_all = {kp(w["av"]) for w in deck}
+POSMAP = {"существительное":"nouns","глагол":"verbs","масдар":"verbs",
+          "прилагательное":"adjs","наречие":"adverbs"}
+def pos_of(eid):
+    for si in range(1, 8):
+        for tok, p in POSMAP.items():
+            if tok in LABELS.get((eid, si), ""): return p
+    return None
+HEADWORD = {eid: hw for hw, eid in cur.execute("SELECT headword, id FROM entries")}
+FIRSTSENSE = {}
+for eid, si, ru in cur.execute("SELECT entry_id, sense_idx, ru_text FROM senses ORDER BY entry_id, sense_idx"):
+    if eid not in FIRSTSENSE and ru: FIRSTSENSE[eid] = (si, ru)
+BADGLOSS = re.compile(r"(указыв|выступает|в сочетани|частиц|обознач|служит|^форма |в знач|грамматическ|Ⅰ|Ⅱ|Ⅲ)")
+supp = []
+for eid, fr in sorted(LEMMA_FREQ.items(), key=lambda x: -x[1]):
+    if fr < 6: break                                  # only clearly-common words
+    hw = HEADWORD.get(eid, "")
+    if not hw or " " in hw or "-" in hw or kp(hw) in seen_all: continue
+    p = pos_of(eid)
+    if p is None: continue
+    fs = FIRSTSENSE.get(eid)
+    if not fs: continue
+    si, gloss = fs
+    if RARE_RE.search(LABELS.get((eid, si), "")): continue
+    terms = gloss_terms(gloss)
+    if not terms or BADGLOSS.search(gloss): continue
+    # skip locative case-forms masquerading as adverbs ("во рту", "в глазу", "на горе")
+    if p == "adverbs" and re.match(r"^(в|во|на|от|под|из|у|к|за|по|с|со|об|при|о|до|над|через|около)\s", terms[0]):
+        continue
+    ru = ", ".join(terms[:2])[:32]
+    av = normpal(hw)
+    if is_loan(av, terms[0]): continue
+    seen_all.add(kp(hw))
+    entry = {"ru": ru, "av": av, "pos": p}
+    a2 = []
+    for c in sorted(REV.get(terms[0], set()), key=lambda h: -word_freq(h)):
+        if " " in c or "-" in c or kp(c) == kp(hw): continue
+        if word_freq(c) < 4: continue
+        a2.append(normpal(c))
+        if len(a2) >= 2: break
+    if a2: entry["alts"] = a2
+    fm = forms_of(av)
+    if fm and len(fm) > 1: entry["forms"] = [normpal(x) for x in fm]
+    ex = example_of(av)
+    if ex: entry["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
+    supp.append(entry)
+print(f"supplement (frequent corpus content words): +{len(supp)}")
+deck = deck + supp
+
 n = len(deck)
 levels = [
     {"id": "l1", "title": "⭐ Топ-250", "words": deck[:250]},
