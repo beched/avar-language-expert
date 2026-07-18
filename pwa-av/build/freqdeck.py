@@ -48,11 +48,11 @@ OVER = {
  "помощь":"кумек","деньги":"гӀарац","общество":"жамагӀат","цель":"мурад","результат":"хӀасил",
  "тело":"черх","услышать":"рагӀизе","слышать":"рагӀизе",
  "особенно":"хасго","рядом":"аскӀо","плечо":"гъеж",
- "становиться":"лъугьине","единство":"цолъи","цена":"багьа",
+ "становиться":"лъугьине","единство":"цолъи","цена":"багьа","голос":"гьаракь","древний":"некӀсияб","крик":"ахӀи","лист":"тӀамах",
 }
 # russian words to drop from the deck (loanwords / no clean single-word native equivalent)
 DROP = {"московский","момент","советский","русский","коммунизм","социализм",
-        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ"}
+        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -331,3 +331,31 @@ for L in levels:
 json.dump(levels, open(os.path.join(HERE, "data.freq.json"), "w", encoding="utf-8"),
           ensure_ascii=False, indent=1)
 print("total deck (by Avar corpus frequency):", n)
+
+# ---- enrichment map: forms/example/synonyms for EVERY Avar word (used to enrich
+#      themed + lesson flashcards too, so no card is just a bare category tag) ----
+ENRICH = {}
+for eid, fr in sorted(LEMMA_FREQ.items(), key=lambda x: -x[1]):   # common entries win the key
+    hw = HEADWORD.get(eid, "")
+    if not hw or " " in hw or "-" in hw: continue
+    key = kp(hw)
+    if key in ENRICH: continue
+    e = {}
+    fm = ENTRY_FORMS.get(eid)
+    if fm and len(fm) > 1: e["forms"] = [normpal(x) for x in fm[:6]]
+    ex = EX.get(eid)
+    if ex: e["ex"] = {"av": normpal(ex[0]), "ru": ex[1]}
+    fs = FIRSTSENSE.get(eid)
+    if fs:
+        terms = gloss_terms(fs[1])
+        if terms:
+            a = []
+            for c in sorted(REV.get(terms[0], set()), key=lambda h: -word_freq(h)):
+                if " " in c or "-" in c or kp(c) == key: continue
+                if word_freq(c) < 4: continue
+                a.append(normpal(c))
+                if len(a) >= 2: break
+            if a: e["alts"] = a
+    if e: ENRICH[key] = e
+json.dump(ENRICH, open(os.path.join(HERE, "data.enrich.json"), "w", encoding="utf-8"), ensure_ascii=False)
+print("enrichment entries:", len(ENRICH))

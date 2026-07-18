@@ -14,6 +14,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 def P(*a): return os.path.join(HERE, *a)
 
 LEX   = json.load(open(P("data.lex.json"), encoding="utf-8"))
+try:   ENRICH = json.load(open(P("data.enrich.json"), encoding="utf-8"))
+except Exception: ENRICH = {}
+def ekey(av):  # match freqdeck's kp(): lowercase + canonical palochka U+04C0
+    return av.lower().replace("ӏ", "Ӏ")
+def enrich(w):  # attach dictionary forms/example/synonyms to a {ru,av,...} word
+    e = ENRICH.get(ekey(w["av"]))
+    if not e: return w
+    o = dict(w)
+    for f in ("forms", "ex", "alts"):
+        if e.get(f) and not o.get(f): o[f] = e[f]
+    return o
 try:   FREQ = json.load(open(P("data.freq.json"), encoding="utf-8"))
 except Exception: FREQ = []
 try:   AUDIO = json.load(open(P("audio_manifest.json"), encoding="utf-8"))
@@ -931,7 +942,7 @@ DATA = {
  "special":  [with_audio(*t) for t in SPECIAL],
  "audio": AUDIO,
  "numbers": [{"av":n(a),"ru":r} for a,r in NUMBERS],
- "themes": LEX,
+ "themes": [{**t, "words": [enrich({"ru": w["ru"], "av": n(w["av"])}) for w in t["words"]]} for t in LEX],
  "freq": [{"id": L["id"], "title": L["title"],
            "words": [{"av": n(w["av"]), "ru": w["ru"], "pos": w["pos"],
                       **({"alts": [n(a) for a in w["alts"]]} if w.get("alts") else {}),
@@ -939,7 +950,7 @@ DATA = {
                       **({"ex": {"av": n(w["ex"]["av"]), "ru": w["ex"]["ru"]}} if w.get("ex") else {})}
                      for w in L["words"]]}
           for L in FREQ],
- "lessons": LESSONS,
+ "lessons": [{**l, "words": [enrich(w) for w in l.get("words", [])]} for l in LESSONS],
  "phrases": {k:[{"av":n(a),"ru":r} for a,r in v] for k,v in PHRASES.items()},
  "verbs": [{**v,"inf":n(v["inf"]),"obj":n(v["obj"]),"pres":n(v["pres"]),
             "past":n(v["past"]),"imp":n(v["imp"]),

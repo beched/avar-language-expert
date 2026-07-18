@@ -198,6 +198,10 @@ const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const ri=n=>Math.floor(Math.random()*n);
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+// scroll just enough to lift an element above the fixed bottom nav (~96px)
+function revealScroll(el){ if(!el||!el.getBoundingClientRect)return;
+  setTimeout(()=>{ const r=el.getBoundingClientRect(); const overflow=r.bottom-(window.innerHeight-96);
+    if(overflow>0) window.scrollBy({top:overflow+16,behavior:'smooth'}); },60); }
 
 /* class agreement */
 const CM={I:'в',II:'й',III:'б',PL:'р'};
@@ -416,7 +420,7 @@ function drillRender(id){const d=drills[id],c=d.cur;
   $(id+'_sess').textContent=d.sess.a+' сделано · '+(d.sess.a?Math.round(100*d.sess.c/d.sess.a):0)+'% верно';
 }
 function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);
-  const g=$(id+'_grade'); if(g&&g.scrollIntoView)setTimeout(()=>g.scrollIntoView({behavior:'smooth',block:'center'}),30);}
+  revealScroll($(id+'_grade'));}
 function drillGrade(id,ok){const d=drills[id];d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,!!ok);drillNew(id);}
 function drillCheck(id){const d=drills[id];const inp=$(id+'_in');const val=inp?inp.value:'';
   if(!val.trim())return;
@@ -630,7 +634,7 @@ function showCard(){
      `<div class="btnrow"><button class="btn blue" onclick="flipCard()">Перевернуть</button></div>`}`;
 }
 function flipCard(){flipped=!flipped;showCard();
-  if(flipped){const g=$('cardGrade'); if(g&&g.scrollIntoView)setTimeout(()=>g.scrollIntoView({behavior:'smooth',block:'end'}),40);}}
+  if(flipped)revealScroll($('cardGrade'));}
 function gradeCard(g){const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;
   let b=SRS[key]||0; b=g===0?Math.max(0,b-1):g===2?Math.min(5,b+2):Math.min(5,b+1);
   SRS[key]=b;saveSrs(); recDay();saveProg(); ci++;flipped=false;showCard();}
