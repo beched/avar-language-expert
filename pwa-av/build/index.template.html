@@ -278,7 +278,16 @@ const GEN={
    return {...g,tag:'вопрос'};},
  place(){const g=pick([{ru:'здесь',av:'гьаниб'},{ru:'там',av:'гьениб'},{ru:'сюда',av:'гьанибе'},{ru:'туда',av:'гьанире'},
      {ru:'Я иду',av:'Дун ине'},{ru:'Она идёт',av:'Дой ине'}]);return {...g,tag:'место'};},
- talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest()]);},
+ loan(){return {...pick([
+     {ru:'Я хочу проверить (провер‑изе)',av:'Дие бокьун буго проверизе'},
+     {ru:'Я хочу погуглить (гугл‑изе)',av:'Дие бокьун буго гуглизе'},
+     {ru:'сделать ремонт',av:'ремонт гьабизе'},
+     {ru:'позвонить (звонок сделать)',av:'звонок гьабизе'},
+     {ru:'в документе',av:'документалда'},{ru:'в интернете',av:'интернеталда'},
+     {ru:'что написано? (написано ли)',av:'Щиб хъван бугебали?'},
+     {ru:'например',av:'масала'},{ru:'но, однако',av:'амма'},{ru:'или',av:'яги'},
+     {ru:'потом, затем',av:'цинги'},{ru:'конечно',av:'узухъда'},{ru:'значит, поэтому',av:'гьединлъидал'}]),tag:'заимствования'};},
+ talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest(),GEN.loan()]);},
  vocab(words){const w=pick(words);return {ru:w.ru,av:w.av,tag:'слова'};},
 };
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -315,7 +324,9 @@ function drillRender(id){const d=drills[id],c=d.cur;
   $(id+'_grade').classList.toggle('on',d.shown);
   $(id+'_sess').textContent=d.sess.a+' сделано · '+(d.sess.a?Math.round(100*d.sess.c/d.sess.a):0)+'% верно';
 }
-function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);}
+function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);
+  // reveal the grade buttons that just appeared below
+  const g=$(id+'_grade'); if(g&&g.scrollIntoView)setTimeout(()=>g.scrollIntoView({behavior:'smooth',block:'center'}),30);}
 function drillGrade(id,ok){const d=drills[id];d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,!!ok);drillNew(id);}
 
 /* ================= VIEWS ================= */
@@ -435,10 +446,21 @@ function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
 
 /* ---- CARDS (SRS) ---- */
 let deck=[],ci=0,flipped=false,cmode='all';
+function everyWord(){
+  const out=allVocab(); const seen=new Set(out.map(w=>w.av+'|'+w.ru));
+  (DATA.freq||[]).forEach(L=>L.words.forEach(w=>{const key=w.av+'|'+w.ru;
+    if(!seen.has(key)){seen.add(key);out.push({av:w.av,ru:w.ru,tag:L.title});}}));
+  return out;
+}
 function renderCards(){
+  const freqChips=(DATA.freq||[]).map(L=>`<span class="chip b ${cmode==='freq:'+L.id?'on':''}" onclick="cmSet('freq:${L.id}')">${esc(L.title)} (${L.words.length})</span>`).join('');
   $('v-cards').innerHTML=`<h2>Картал · Карточки</h2>
+    <p class="lead">По частотности (реальный аварский, без русских заимствований) или по темам.</p>
     <div class="chips">
       <span class="chip ${cmode==='all'?'on':''}" onclick="cmSet('all')">Все слова</span>
+      ${freqChips}
+    </div>
+    <div class="chips">
       ${DATA.themes.map(t=>`<span class="chip ${cmode===t.id?'on':''}" onclick="cmSet('${t.id}')">${t.emoji} ${esc(t.title)}</span>`).join('')}
     </div>
     <div id="cardbox"></div>`;
@@ -446,7 +468,10 @@ function renderCards(){
 }
 function cmSet(m){cmode=m;renderCards();}
 function buildDeck(){
-  let src = cmode==='all'?allVocab():(DATA.themes.find(t=>t.id===cmode)?.words||[]).map(w=>({...w,tag:cmode}));
+  let src;
+  if(cmode==='all') src=everyWord();
+  else if(cmode.startsWith('freq:')){const L=(DATA.freq||[]).find(x=>'freq:'+x.id===cmode);src=(L?L.words:[]).map(w=>({...w,tag:L?L.title:''}));}
+  else src=(DATA.themes.find(t=>t.id===cmode)?.words||[]).map(w=>({...w,tag:cmode}));
   // spaced: prioritise low box
   deck=shuffle(src).sort((a,b)=>(SRS[a.av+'|'+a.ru]||0)-(SRS[b.av+'|'+b.ru]||0));
   ci=0;flipped=false;
@@ -509,7 +534,7 @@ function renderRefBody(){const b=$('refbody');
   }
 }
 function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
-  const all=allVocab();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
+  const all=everyWord();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
   const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
   $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="ipa">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}</div></div>`).join('')}</div>`;
 }
@@ -526,6 +551,11 @@ function gramHTML(){return `
    <tr><td>мун</td><td>ты</td><td>дур</td><td>твой</td></tr>
    <tr><td>нилъ / ниж</td><td>мы (вкл./искл.)</td><td>дов/дой/доб</td><td>он/она/оно</td></tr>
    <tr><td>нуж</td><td>вы</td><td>дица/дуца</td><td>я/ты (эрг.)</td></tr></table>
+  <div class="callout g"><b>Два «мы» — это по-аварски!</b>
+   <b>нилъ</b> = «мы <u>с тобой</u>» (инклюзив, слушатель включён): «Нилъ цадахъ руго» — «Мы (ты и я) вместе».
+   <b>ниж</b> = «мы <u>без тебя</u>» (эксклюзив): «Ниж гьаниб руго» — «Мы здесь (а ты — нет)».
+   В русском одно «мы», а аварец сразу уточняет: с тобой или без тебя. (руго — «есть» для мн. числа.)</div>
+  <div class="callout b"><b>Нет вежливого «вы».</b> Даже к старшим — <b>мун</b> (ты). «Вы» (нуж) — только про многих.</div>
   <div class="hd"><span class="n">3</span><b>Глагол: окончания</b></div>
   <table class="vguide">
    <tr><td class="v">‑ула/‑уна</td><td>настоящее</td><td>цӀалула «читает»</td></tr>
@@ -546,13 +576,21 @@ function gramHTML(){return `
    <tr><td>Эргатив ‑ца</td><td class="v">дица</td><td>я (делаю с предметом)</td></tr>
    <tr><td>Генитив ‑р</td><td class="v">дир</td><td>мой</td></tr>
    <tr><td>Датив ‑е</td><td class="v">дие</td><td>мне</td></tr></table>
-  <p class="lead">Местные падежи — «где / куда / откуда» (пример: стол, село):</p>
-  <table class="vguide">
-   <tr><td>Эссив (где?) ‑да/‑лъ</td><td class="v">столалда</td><td>на столе · росулъ «в селе»</td></tr>
-   <tr><td>Аллатив (куда?) ‑де</td><td class="v">столалде</td><td>на стол · росулъе «в село»</td></tr>
-   <tr><td>Аблатив (откуда?) ‑са</td><td class="v">столалдаса</td><td>со стола · росулъа «из села»</td></tr></table>
-  <p class="note">У «я» местные формы: <b>дида</b> «у меня», <b>диде</b> «ко мне», <b>дидаса</b> «от меня».
-    Всего в аварском около 20 падежей (много «местных» серий: на, в, у, под…) — но этих хватит, чтобы говорить.</p>
+  <p class="lead">Местные падежи. Это «фишка» аварского: <b>5 серий</b> (ГДЕ именно: на / у / в среде /
+    под / внутри полого) × <b>4 направления</b> (где / куда / откуда / насквозь) ≈ 20 форм.
+    Серию выбираешь по смыслу, направление — по суффиксу:</p>
+  <div style="overflow-x:auto"><table class="vguide">
+   <tr class="head"><td>Серия (где)</td><td>где? (локатив)</td><td>куда? (‑е)</td><td>откуда? (‑а/‑са)</td><td>насквозь (‑н)</td></tr>
+   <tr><td><b>I</b> на поверхности <span class="v">‑да</span></td><td>стол‑алда «на столе»</td><td>‑алде</td><td>‑алдаса</td><td>‑алдасан</td></tr>
+   <tr><td><b>II</b> у, при, рядом <span class="v">‑хъ</span></td><td>ди‑хъ «у меня»</td><td>‑хъе</td><td>‑хъа</td><td>‑хъан</td></tr>
+   <tr><td><b>III</b> в сплошной среде <span class="v">‑лъ</span></td><td>росу‑лъ «в селе»</td><td>‑лъе</td><td>‑лъа</td><td>‑лъан</td></tr>
+   <tr><td><b>IV</b> под <span class="v">‑кь</span></td><td>гъор‑кь «под низом»</td><td>‑кье</td><td>‑кьа</td><td>‑кьан</td></tr>
+   <tr><td><b>V</b> внутри полого <span class="v">жани‑б</span></td><td>жани‑б «внутри»</td><td>жани‑бе</td><td>жани‑са</td><td>жани‑сан</td></tr></table></div>
+  <div class="callout g"><b>Как это работает.</b> «На столе» — предмет НА поверхности → серия I: <b>столалда</b>.
+    «В селе» — внутри среды → серия III: <b>росулъ</b>. «У меня» — рядом → серия II: <b>дихъ</b>.
+    Меняешь последний кусок: ‑да «где», ‑де «куда», ‑даса «откуда».</div>
+  <p class="note">У «я» местные формы: <b>дида</b> «у меня / на мне», <b>диде</b> «ко мне», <b>дидаса</b> «от меня».
+    Для начала хватит серии I (‑да/‑де/‑даса) — уже можно сказать «где, куда, откуда».</p>
 
   <div class="hd"><span class="n">6</span><b>Формы глагола (подробно)</b></div>
   <details><summary>Времена и наклонения</summary>
