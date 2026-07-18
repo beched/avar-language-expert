@@ -309,8 +309,26 @@ const GEN={
  past(){if(Math.random()<0.55){const c=selfCls();
      return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'йачӀана':'вачӀана'),tag:'прош. время'};}
    const v=pick(DATA.verbs.filter(v=>v.tr));return {ru:'Я '+v.pastRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
- imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Квана!'},
-     {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'}]);return {...g,tag:'просьба'};},
+ imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Кванай!'},
+     {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'},
+     {ru:'Вставай!',av:'Вахъа!'},{ru:'Не читай!',av:'ЦӀалуге!'},{ru:'Давай! (дай)',av:'Кье!'}]);return {...g,tag:'просьба'};},
+ future(){const v=pick(DATA.verbs.filter(x=>x.fut));
+   if(v.tr)return {ru:'Я '+v.futRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.fut,tag:'буд. время'};
+   return {ru:'Я '+v.futRu,av:'Дун '+v.fut,tag:'буд. время'};},
+ vform(){const v=pick(DATA.verbs);
+   const F=[['настоящее (делает)',v.pres],['прошедшее (сделал)',v.past],['приказ (сделай!)',v.imp],
+     ['отрицание наст. (не делает)',v.pres+'ро'],['если … (условное)',v.past.replace(/на$/,'ни')]];
+   if(v.fut)F.push(['будущее (сделает)',v.fut]);
+   if(v.conv)F.push(['деепричастие (сделав)',v.conv]);
+   if(v.part)F.push(['причастие (…ющий)',v.part]);
+   const f=pick(F);
+   return {ru:v.ru+' («'+v.inf+'») → '+f[0],av:f[1],tag:'формы глагола'};},
+ cases(){const p=pick(DATA.cases.pron);const c=pick(p.forms);
+   return {ru:p.ru+' → '+c[0],av:c[1],tag:'падежи'};},
+ localcase(){const nn=pick(DATA.cases.local);const c=pick(nn.forms);
+   return {ru:nn.ru+' → '+c[0],av:c[1],tag:'местные падежи'};},
+ cond(){return {...pick(DATA.conds),tag:'условное'};},
+ casemix(){return Math.random()<0.5?GEN.cases():GEN.localcase();},
  quest(){const g=pick([{ru:'что?',av:'щиб?'},{ru:'кто? (о мужчине)',av:'щив?'},{ru:'кто? (о женщине)',av:'щий?'},
      {ru:'где?',av:'киб?'},{ru:'когда?',av:'кида?'},{ru:'как?',av:'кин?'},{ru:'почему?',av:'щай?'},{ru:'сколько?',av:'чан?'}]);
    return {...g,tag:'вопрос'};},
@@ -693,6 +711,18 @@ function gramHTML(){return `
     <tr><td class="v">‑дар/‑ар</td><td>многократность</td><td>хъвадаризе «много писать»</td></tr>
     <tr><td class="v">‑лъизе</td><td>отымённый глагол</td><td>цолъизе «объединяться»</td></tr>
     <tr><td class="v">‑ян/‑илан</td><td>цитата («мол»)</td><td>абуна…ян «сказал…»</td></tr></table></details>
+  <details><summary>Условное наклонение («если»)</summary>
+   <table class="vguide">
+    <tr><td class="v">‑ни</td><td>реальное: «если сделает»</td><td>цӀала‑ни</td></tr>
+    <tr><td class="v">‑чӀони</td><td>«если не сделает»</td><td>цӀаличӀо‑ни</td></tr>
+    <tr><td class="v">‑арабани</td><td>«если бы было»</td><td>букӀ‑арабани</td></tr>
+    <tr><td class="v">‑ебани (‑чӀ…)</td><td>«если бы не было»</td><td>букӀинчӀ‑ебани</td></tr></table></details>
+  <div class="callout b"><b>Инфинитив ‑изе или ‑ине.</b> Большинство глаголов на <b>‑изе</b>; часть — на <b>‑ине</b>
+    (ине, вачӀине, ретӀине, бачине). Спрягаются одинаково. Но не путай: <b>бахъизе</b> «получаться» ≠
+    <b>бахъине</b> «вставать»!</div>
+  <div class="callout g"><b>Эргатив подробно (Атаев).</b> Имена и люди → <b>‑ца</b> (ГӀали‑ца, Том‑ица).
+    Указательные и прилагательные — по классу косвенной основы: I <b>‑с</b> (гьес «он»),
+    II/III <b>‑лъ</b> (гьелъ «она/оно»), мн. <b>‑з</b> (гьез «они»). Женский и «вещный» класс тяготеют к ‑лъ.</div>
   <div class="callout b"><b>Глагол «ине» (идти)</b> — без классного показателя, одинаков для всех:
     Дун ине, Дой ине. А «приходить» — с показателем: вачӀине / йачӀине / бачӀине.</div>`;
 }
