@@ -22,8 +22,8 @@ def k(s):  # palochka-insensitive, lowercase
     s = (s or "").lower()
     for v in "ӏіiI": s = s.replace(v, "")
     return s
-def normpal(s):  # canonical palochka U+04C0
-    for v in "ӏІіIl": s = s.replace(v, "Ӏ")
+def normpal(s):  # canonical palochka U+04C0 (source data uses Latin I/i/l, Cyrillic І/і as palochka)
+    for v in "ӏІіIli": s = s.replace(v, "Ӏ")
     return s
 
 # --- seed: my 200 hand-verified themed words (correct) ----------------------
@@ -49,7 +49,7 @@ OVER = {
  "тело":"черх","услышать":"рагӀизе","слышать":"рагӀизе",
  "особенно":"хасго","рядом":"аскӀо","плечо":"гъеж",
  "становиться":"лъугьине","единство":"цолъи","цена":"багьа","голос":"гьаракь","древний":"некӀсияб","крик":"ахӀи","лист":"тӀамах",
- "шум":"сас","страсть":"гӀишкъу",
+ "шум":"сас","страсть":"гӀишкъу","местный":"гьанисеб",
 }
 # supplement (AV-frequency) words to skip: directional/redundant forms
 SUPP_DROP = {"цебеса"}
@@ -57,7 +57,7 @@ SUPP_DROP = {"цебеса"}
 MANUAL = {"внутри": "жаниб"}
 # russian words to drop from the deck (loanwords / no clean single-word native equivalent)
 DROP = {"московский","момент","советский","русский","коммунизм","социализм",
-        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер"}
+        "вдруг","внезапно","ясно","единый","глава","машина","автомобиль","совсем","минута","опыт","случай","рост","век","образ","конечный","вечер","принимать"}
 def prim_ok(av, ru):  # (av, ru) is a real dictionary pair with ru in a sense?
     return _validate(av, ru) is not None
 
@@ -123,7 +123,7 @@ for eid, si, lab in cur.execute("SELECT entry_id, sense_idx, labels_json FROM se
 # palochka-PRESERVING key (so цӀакъ 'очень' != цакъ 'зубик' — avoid homonym mixups)
 def kp(s):
     s = (s or "").lower()
-    for v in "ӏІіIl": s = s.replace(v, "Ӏ")
+    for v in "ӏІіIli": s = s.replace(v, "Ӏ")   # incl. Latin small i (from lowercased Latin-I palochka)
     return s
 HWID_EXACT = {}
 for hw, eid in cur.execute("SELECT headword, id FROM entries"):
@@ -152,23 +152,44 @@ for eid, av, ru in cur.execute("SELECT entry_id, av, ru FROM examples WHERE av I
     if eid not in EX or e[2] < EX[eid][2]:
         EX[eid] = e
 
-def forms_of(av):
-    for eid in HWID_EXACT.get(kp(av), []):
+def eids_for(av, ru=None):
+    """Entry ids for headword `av`, ORDERED so the homonym whose senses match the
+    target meaning `ru` comes first. This is what makes examples/forms/senses
+    sense-aware: e.g. ряд->кьер must use entry 9807 (ряд/строй), not 9804 (цвет),
+    so we never show 'кьер ине = обесцвечиваться' as an example for 'ряд'."""
+    ids = HWID_EXACT.get(kp(av), [])
+    if not ru or len(ids) < 2:
+        return ids
+    rk = ru.lower().strip()
+    exact, sub, rest = [], [], []
+    for eid in ids:
+        terms = set()
+        txt = ""
+        for si, g in SENSE.get(eid, []):
+            gl = gloss_terms(g); terms |= set(gl); txt += " " + (g or "").lower()
+        if rk in terms:        exact.append(eid)
+        elif rk in txt:        sub.append(eid)
+        else:                  rest.append(eid)
+    return exact + sub + rest
+def forms_of(av, ru=None):
+    for eid in eids_for(av, ru):
         f = ENTRY_FORMS.get(eid)
         if f: return f[:6]
     return None
-def example_of(av):
-    for eid in HWID_EXACT.get(kp(av), []):
+def example_of(av, ru=None):
+    for eid in eids_for(av, ru):
         e = EX.get(eid)
         if e: return {"av": e[0], "ru": e[1]}
     return None
-def alt_obj(av):  # a synonym carrying its own usage example
+def alt_obj(av, ru=None):  # a synonym carrying an example for THIS meaning
     o = {"av": normpal(av)}
-    ex = example_of(av)
+    ex = example_of(av, ru)
     if ex: o["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
     return o
-def senses_of(av):  # the word's OTHER meanings (all dictionary senses), to disambiguate
-    for eid in sorted(HWID_EXACT.get(kp(av), []), key=lambda e: -LEMMA_FREQ.get(e, 0)):
+def senses_of(av, ru=None):  # the word's OTHER meanings (of the matching homonym)
+    order = eids_for(av, ru) if ru else sorted(
+        HWID_EXACT.get(kp(av), []), key=lambda e: -LEMMA_FREQ.get(e, 0))
+    for eid in order:
         ss = SENSE.get(eid)
         if not ss: continue
         out = []
@@ -263,7 +284,7 @@ def best_avar(ru_word, cands):
     for s, fr, av in scored:
         if fr < 3: continue                # only reasonably-used synonyms
         if kp(av) in seen: continue
-        seen.add(kp(av)); alts.append(alt_obj(av))
+        seen.add(kp(av)); alts.append(alt_obj(av, ru_word))
         if len(alts) >= 2: break
     return primary, alts
 
@@ -290,11 +311,11 @@ for pos, fn in FILES:
         entry = {"ru": ru, "av": av, "pos": pos}
         alts = alts[:2]
         if alts: entry["alts"] = alts
-        fm = forms_of(av)
+        fm = forms_of(av, ru)
         if fm and len(fm) > 1: entry["forms"] = [normpal(x) for x in fm]
-        ex = example_of(av)
+        ex = example_of(av, ru)
         if ex: entry["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
-        sn = senses_of(av)
+        sn = senses_of(av, ru)
         if sn: entry["senses"] = sn
         out.append(entry)
     resolved[pos] = out
@@ -317,7 +338,7 @@ _man = []
 for ru, av in MANUAL.items():
     if ru in _have: continue
     e = {"ru": ru, "av": normpal(av), "pos": "?"}
-    fm = forms_of(av);  ex = example_of(av);  sn = senses_of(av)
+    fm = forms_of(av, ru);  ex = example_of(av, ru);  sn = senses_of(av, ru)
     if fm and len(fm) > 1: e["forms"] = [normpal(x) for x in fm]
     if ex: e["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
     if sn: e["senses"] = sn
@@ -377,14 +398,14 @@ for key, fr in sorted(HK_FREQ.items(), key=lambda x: -x[1]):
     a2 = []
     for c in sorted(REV.get(terms[0], set()), key=lambda h: -word_freq(h)):
         if " " in c or "-" in c or kp(c) == key or word_freq(c) < 8: continue
-        a2.append(alt_obj(c))
+        a2.append(alt_obj(c, terms[0]))
         if len(a2) >= 2: break
     if a2: entry["alts"] = a2
-    fm = forms_of(av)
+    fm = forms_of(av, terms[0])
     if fm and len(fm) > 1: entry["forms"] = [normpal(x) for x in fm]
-    ex = example_of(av)
+    ex = example_of(av, terms[0])
     if ex: entry["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
-    sn = senses_of(av)
+    sn = senses_of(av, terms[0])
     if sn: entry["senses"] = sn
     supp.append(entry)
 print(f"supplement (frequent corpus words, meaning-deduped): +{len(supp)}")
@@ -424,7 +445,7 @@ for eid, fr in sorted(LEMMA_FREQ.items(), key=lambda x: -x[1]):   # common entri
             for c in sorted(REV.get(terms[0], set()), key=lambda h: -word_freq(h)):
                 if " " in c or "-" in c or kp(c) == key: continue
                 if word_freq(c) < 4: continue
-                a.append(alt_obj(c))
+                a.append(alt_obj(c, terms[0]))
                 if len(a) >= 2: break
             if a: e["alts"] = a
     if e: ENRICH[key] = e

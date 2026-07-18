@@ -613,6 +613,11 @@ function cardReveal(c){
   let h=`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div>`;
   if(c.ex) h+=`<div class="divider"></div><div class="av" style="font-size:1.05rem">${esc(c.ex.av)}</div><div class="az">${esc(c.ex.ru)}</div>`;
   if(c.forms&&c.forms.length>1) h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">формы: <span class="av" style="font-weight:400">${c.forms.slice(0,6).map(esc).join(' · ')}</span></div>`;
+  const senses=(c.senses||[]).filter(Boolean);
+  if(senses.length>1){
+    h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">значения слова «${esc(c.av)}»:</div>`
+      +`<div class="az" style="font-size:.8rem;font-weight:400;color:var(--fg)">${senses.slice(0,4).map((s,i)=>`${i+1}. ${esc(s)}`).join('<br>')}</div>`;
+  }
   const alts=(c.alts||[]).map(altStr).filter(a=>a.av&&a.av!==c.av);
   if(alts.length){
     h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">синонимы:</div>`;
