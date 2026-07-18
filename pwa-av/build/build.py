@@ -945,7 +945,7 @@ DATA = {
  "themes": [{**t, "words": [enrich({"ru": w["ru"], "av": n(w["av"])}) for w in t["words"]]} for t in LEX],
  "freq": [{"id": L["id"], "title": L["title"],
            "words": [{"av": n(w["av"]), "ru": w["ru"], "pos": w["pos"],
-                      **({"alts": [n(a) for a in w["alts"]]} if w.get("alts") else {}),
+                      **({"alts": w["alts"]} if w.get("alts") else {}),
                       **({"forms": [n(x) for x in w["forms"]]} if w.get("forms") else {}),
                       **({"ex": {"av": n(w["ex"]["av"]), "ru": w["ex"]["ru"]}} if w.get("ex") else {})}
                      for w in L["words"]]}

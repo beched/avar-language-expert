@@ -134,6 +134,11 @@ def example_of(av):
         e = EX.get(eid)
         if e: return {"av": e[0], "ru": e[1]}
     return None
+def alt_obj(av):  # a synonym carrying its own usage example
+    o = {"av": normpal(av)}
+    ex = example_of(av)
+    if ex: o["ex"] = {"av": normpal(ex["av"]), "ru": ex["ru"]}
+    return o
 
 # --- reverse index: russian word -> candidate Avar headwords (single word) ---
 REV = {}
@@ -215,15 +220,15 @@ def best_avar(ru_word, cands):
         top = scored[0]
         # require the word to actually be USED in the corpus (drops rare literary Arabisms
         # like таварих=2, вилаят=1, машгъуллъизе=1). OVER/SEED words bypass this.
-        if top[1] < 4: return None, []
+        if top[1] < 6: return None, []
         primary = top[2]
     # alternates: other common (freq>0) synonyms/senses, distinct from primary
-    alts, seen = [], {k(primary)}
+    alts, seen = [], {kp(primary)}
     for s, fr, av in scored:
         if fr < 3: continue                # only reasonably-used synonyms
-        if k(av) in seen: continue
-        seen.add(k(av)); alts.append(av)
-        if len(alts) >= 3: break
+        if kp(av) in seen: continue
+        seen.add(kp(av)); alts.append(alt_obj(av))
+        if len(alts) >= 2: break
     return primary, alts
 
 # ============ deck from frequent Russian words -> common Avar equivalents ====
@@ -247,7 +252,7 @@ for pos, fn in FILES:
         if k(av) in seen_av: continue
         seen_av.add(k(av))
         entry = {"ru": ru, "av": av, "pos": pos}
-        alts = [normpal(a) for a in alts][:2]
+        alts = alts[:2]
         if alts: entry["alts"] = alts
         fm = forms_of(av)
         if fm and len(fm) > 1: entry["forms"] = [normpal(x) for x in fm]
@@ -353,7 +358,7 @@ for eid, fr in sorted(LEMMA_FREQ.items(), key=lambda x: -x[1]):   # common entri
             for c in sorted(REV.get(terms[0], set()), key=lambda h: -word_freq(h)):
                 if " " in c or "-" in c or kp(c) == key: continue
                 if word_freq(c) < 4: continue
-                a.append(normpal(c))
+                a.append(alt_obj(c))
                 if len(a) >= 2: break
             if a: e["alts"] = a
     if e: ENRICH[key] = e

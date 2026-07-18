@@ -607,13 +607,21 @@ function buildDeck(){
   deck=shuffle(src).sort((a,b)=>(SRS[a.av+'|'+a.ru]||0)-(SRS[b.av+'|'+b.ru]||0));
   ci=0;flipped=false;
 }
+function altStr(a){return (typeof a==='string')?{av:a}:a;}   // back-compat
 function cardReveal(c){
-  // rich back of the card: pronunciation, synonyms, dictionary forms, usage example
+  // rich back of the card: pronunciation, usage example, forms, synonyms (each with its example)
   let h=`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div>`;
-  if(c.alts&&c.alts.length) h+=`<div class="az" style="margin-top:4px">синонимы: ${c.alts.map(esc).join(', ')}</div>`;
-  if(c.forms&&c.forms.length>1) h+=`<div class="divider"></div><div class="az" style="font-size:.8rem">формы: <span class="av" style="font-weight:400">${c.forms.slice(0,6).map(esc).join(' · ')}</span></div>`;
   if(c.ex) h+=`<div class="divider"></div><div class="av" style="font-size:1.05rem">${esc(c.ex.av)}</div><div class="az">${esc(c.ex.ru)}</div>`;
-  h+=`<div class="az" style="margin-top:6px;font-size:.72rem">${esc(c.tag||'')}</div>`;
+  if(c.forms&&c.forms.length>1) h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">формы: <span class="av" style="font-weight:400">${c.forms.slice(0,6).map(esc).join(' · ')}</span></div>`;
+  const alts=(c.alts||[]).map(altStr).filter(a=>a.av&&a.av!==c.av);
+  if(alts.length){
+    h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">синонимы:</div>`;
+    alts.forEach(a=>{
+      h+=`<div style="margin-top:3px"><span class="av" style="font-weight:600">${esc(a.av)}</span>`
+        +(a.ex?` <span class="az">— ${esc(a.ex.av)} <i>(${esc(a.ex.ru)})</i></span>`:'')+`</div>`;
+    });
+  }
+  h+=`<div class="az" style="margin-top:8px;font-size:.72rem">${esc(c.tag||'')}</div>`;
   return h;
 }
 function showCard(){
@@ -679,7 +687,7 @@ function renderRefBody(){const b=$('refbody');
 function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
   const all=everyWord();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
   const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
-  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="az">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}${w.alts&&w.alts.length?`<span class="az">, ${w.alts.map(esc).join(', ')}</span>`:''} ${pron(w.av)}</div></div>`).join('')}</div>`;
+  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="az">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}${w.alts&&w.alts.length?`<span class="az">, ${w.alts.map(a=>esc(altStr(a).av)).join(', ')}</span>`:''} ${pron(w.av)}</div></div>`).join('')}</div>`;
 }
 function gramHTML(){return `
   <div class="hd"><span class="n">1</span><b>Классы (роды)</b></div>
