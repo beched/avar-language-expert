@@ -11,7 +11,7 @@ function mkEl(id) {
     classList: { add(){}, remove(){}, toggle(){}, contains(){return false;} },
     get innerHTML(){return this._html;}, set innerHTML(v){this._html=String(v);},
     appendChild(){}, insertBefore(){}, addEventListener(){}, removeAttribute(){},
-    setAttribute(){}, focus(){}, querySelectorAll(){return withForEach([]);},
+    setAttribute(){}, focus(){}, remove(){}, querySelectorAll(){return withForEach([]);},
     querySelector(){return mkEl('q');}, onclick:null,
   };
 }
@@ -22,7 +22,7 @@ const doc = {
   querySelectorAll: () => withForEach([mkEl('a'), mkEl('b')]),
   querySelector: () => mkEl('q'),
   createElement: () => mkEl('c'),
-  body: { classList: { add(){}, remove(){}, toggle(){}, contains(){return false;} } },
+  body: { classList: { add(){}, remove(){}, toggle(){}, contains(){return false;} }, appendChild(){}, insertBefore(){}, firstChild:null },
 };
 global.document = doc;
 global.window = global;
@@ -47,7 +47,12 @@ const exercise = `
   DATA.lessons.filter(l=>l.drill).forEach(l => T('drill '+l.id, () => {
     drillMount('main', l.drill, 'L:'+l.id, l.t);
     for(var i=0;i<10;i++){ drillShow('main'); drillGrade('main', Math.random()<0.5?1:0); }
+    drillMode('main', true); drillCheck('main'); drillNew('main'); drillMode('main', false);
   }));
+  T('translit', () => { ['гӀеч','кӀудияб','цӀар','дун вачӀана'].forEach(w=>{ if(typeof translit(w)!=='string') throw new Error('translit'); }); });
+  T('streak/day', () => { recDay(); if(typeof streak()!=='number') throw new Error('streak'); });
+  T('onboard', () => { maybeOnboard(); pickGender('f'); pickGender('m'); });
+  T('pron', () => { if(!pron('гӀеч').includes('ipa')) throw new Error('pron'); });
   T('cards', () => { renderCards(); buildDeck(); showCard(); flipCard(); gradeCard(1); gradeCard(0); gradeCard(2); });
   ['alpha','phr','voc','gram'].forEach(rt => T('ref '+rt, () => { refTab=rt; renderRef(); }));
   T('vocSearch', () => { refTab='voc'; renderRef(); vocSearch(); });

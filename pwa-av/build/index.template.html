@@ -199,6 +199,34 @@ function selfCls(){return S.gender==='f'?'II':'I';}   // класс говоря
 function agreeAdj(adjB,cls){return adjB.slice(0,-1)+ (cls==='I'?'в':cls==='II'?'й':cls==='III'?'б':'л');}
 const P=DATA.pools;   // {I:[{av,ru}],II,III,adj}
 
+/* ---- Cyrillic -> IPA transliterator (built from the alphabet's own IPA map) ---- */
+const nk=s=>s.toLowerCase().replace(/ӏ/g,'Ӏ');   // lowercase + canonical palochka (U+04C0)
+const IPA=(()=>{
+  const m={};
+  const clean=ipa=>ipa.split('/')[0].trim();      // "e / je" -> "e"
+  const put=(L,ipa)=>{L.split(' ').forEach(p=>{if(p)m[nk(p)]=clean(ipa);});};
+  DATA.special.forEach(x=>put(x.L,x.ipa));
+  DATA.alphabet.forEach(x=>put(x.L,x.ipa));
+  Object.assign(m,{'е':'e','э':'e','я':'ja','ю':'ju','ё':'jo','ы':'ɨ','ь':'ʲ','ф':'f','ъ':'ʔ'});
+  return m;
+})();
+function translit(word){
+  if(!word)return '';
+  const s=word.replace(/ӏ/g,'Ӏ'); let out=''; let i=0;
+  while(i<s.length){
+    const two=nk(s.substr(i,2));
+    const one=nk(s[i]);
+    if(/\s/.test(s[i])){out+=' ';i++;continue;}
+    if(/[.,!?;:—…()«»"'-]/.test(s[i])){out+=s[i];i++;continue;}
+    if(IPA[two]){out+=IPA[two];i+=2;}
+    else if(IPA[one]){out+=IPA[one];i+=1;}
+    else {out+=s[i];i++;}
+  }
+  return out;
+}
+// pronunciation span (hidden when the "Произношение" toggle is off, via .hide-ipa)
+function pron(av){return `<span class="ipa">[${esc(translit(av))}]</span>`;}
+
 /* ---------------- audio ---------------- */
 let _audio=null;
 function playAudio(file,btn){
@@ -220,9 +248,18 @@ function toggleGender(){S.gender=S.gender==='m'?'f':'m';save();applyToggles();re
 
 /* ---------------- progress ---------------- */
 function lp(id){return PROG.lessons[id]||(PROG.lessons[id]={seen:false,done:false,a:0,c:0,miss:0});}
-function recLesson(id,ok){const l=lp(id);l.seen=true;l.a++;ok?l.c++:l.miss++;saveProg();}
+function recLesson(id,ok){const l=lp(id);l.seen=true;l.a++;ok?l.c++:l.miss++;recDay();saveProg();}
 function recDrill(key,label,ok){const d=PROG.drill;d.a++;if(ok)d.c++;
-  const e=d.byKey[key]||(d.byKey[key]={a:0,c:0,miss:0,label});e.label=label;e.a++;e[ok?'c':'miss']++;saveProg();}
+  const e=d.byKey[key]||(d.byKey[key]={a:0,c:0,miss:0,label});e.label=label;e.a++;e[ok?'c':'miss']++;recDay();saveProg();}
+/* daily streak + goal */
+const DAILY_GOAL=20;
+function dkey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function recDay(){if(!PROG.days)PROG.days={};const t=dkey(new Date());PROG.days[t]=(PROG.days[t]||0)+1;}
+function todayCount(){return (PROG.days&&PROG.days[dkey(new Date())])||0;}
+function streak(){if(!PROG.days)return 0;let s=0;const d=new Date();
+  if(!PROG.days[dkey(d)])d.setDate(d.getDate()-1);        // grace: today not yet done
+  while(PROG.days[dkey(d)]){s++;d.setDate(d.getDate()-1);}
+  return s;}
 function lessonsDone(){return Object.values(PROG.lessons).filter(l=>l.done).length;}
 function acc(){const d=PROG.drill;return d.a?Math.round(100*d.c/d.a):0;}
 
@@ -304,30 +341,56 @@ function genFor(spec){
 /* ================= INFINITE DRILL WIDGET ================= */
 const drills={};
 function drillHTML(id){return `
- <div class="stage" id="${id}_stage"></div>
- <div class="btnrow">
-   <button class="btn blue" onclick="drillShow('${id}')" id="${id}_show">Показать ответ</button>
-   <button class="btn ghost" onclick="drillNew('${id}')">↻ Дальше</button>
+ <div class="chips" style="justify-content:center;margin-bottom:2px">
+   <span class="chip on" id="${id}_mSay" onclick="drillMode('${id}',false)">🗣️ Сказать</span>
+   <span class="chip b" id="${id}_mType" onclick="drillMode('${id}',true)">⌨️ Печатать</span>
  </div>
- <div class="grade" id="${id}_grade">
-   <button class="btn blk" style="flex:1" onclick="drillGrade('${id}',0)">Не смог</button>
-   <button class="btn grn" style="flex:1" onclick="drillGrade('${id}',1)">Смог ✓</button>
+ <div class="stage" id="${id}_stage"></div>
+ <div class="feedback" id="${id}_fb" style="text-align:center"></div>
+ <div id="${id}_type" style="display:none">
+   <input type="text" id="${id}_in" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="Напиши по-аварски…" onkeydown="if(event.key==='Enter')drillCheck('${id}')">
+   <div class="btnrow" style="margin-top:8px">
+     <button class="btn blue" onclick="drillCheck('${id}')">Проверить</button>
+     <button class="btn ghost" onclick="drillNew('${id}')">↻ Дальше</button></div>
+ </div>
+ <div id="${id}_reveal">
+   <div class="btnrow">
+     <button class="btn blue" onclick="drillShow('${id}')" id="${id}_show">Показать ответ</button>
+     <button class="btn ghost" onclick="drillNew('${id}')">↻ Дальше</button>
+   </div>
+   <div class="grade" id="${id}_grade">
+     <button class="btn blk" style="flex:1" onclick="drillGrade('${id}',0)">Не смог</button>
+     <button class="btn grn" style="flex:1" onclick="drillGrade('${id}',1)">Смог ✓</button>
+   </div>
  </div>
  <div class="note" id="${id}_sess" style="text-align:center">0 сделано</div>`;}
-function drillMount(id,spec,key,label){drills[id]={spec,key:key||'G:'+(spec&&spec.gen||'mix'),label:label||'Тренировка',cur:null,shown:false,sess:{a:0,c:0}};drillNew(id);}
-function drillNew(id){const d=drills[id];d.cur=genFor(d.spec);d.shown=false;drillRender(id);}
+function drillMount(id,spec,key,label){drills[id]={spec,key:key||'G:'+(spec&&spec.gen||'mix'),label:label||'Тренировка',cur:null,shown:false,typing:false,sess:{a:0,c:0}};drillNew(id);}
+function normAns(s){return (s||'').toLowerCase().replace(/ӏ/g,'').replace(/ё/g,'е').replace(/[^а-я]/g,'');}
+function drillMode(id,typing){const d=drills[id];if(!d)return;d.typing=typing;
+  $(id+'_mSay').classList.toggle('on',!typing);$(id+'_mType').classList.toggle('on',typing);
+  $(id+'_type').style.display=typing?'':'none';$(id+'_reveal').style.display=typing?'none':'';
+  drillNew(id);}
+function drillNew(id){const d=drills[id];d.cur=genFor(d.spec);d.shown=false;
+  const inp=$(id+'_in');if(inp)inp.value='';const fb=$(id+'_fb');if(fb){fb.textContent='';fb.className='feedback';}
+  drillRender(id);if(inp&&d.typing)inp.focus();}
 function drillRender(id){const d=drills[id],c=d.cur;
   $(id+'_stage').innerHTML=`<div class="tasktag">${esc(c.tag||'')}</div>
     <div class="prompt">${esc(c.ru)}</div>`+
-    (d.shown?`<div class="ans">${esc(c.av)}</div>`+(c.audio?`<div><button class="play" onclick="playAudio('${c.audio}',this)">▶</button></div>`:''):'');
-  $(id+'_show').style.display=d.shown?'none':'';
-  $(id+'_grade').classList.toggle('on',d.shown);
+    (d.shown?`<div class="ans">${esc(c.av)}</div><div class="ipa" style="font-size:.95rem">[${esc(translit(c.av))}]</div>`+(c.audio?`<div><button class="play" onclick="playAudio('${c.audio}',this)">▶</button></div>`:''):'');
+  const show=$(id+'_show');if(show)show.style.display=d.shown?'none':'';
+  $(id+'_grade').classList.toggle('on',d.shown&&!d.typing);
   $(id+'_sess').textContent=d.sess.a+' сделано · '+(d.sess.a?Math.round(100*d.sess.c/d.sess.a):0)+'% верно';
 }
 function drillShow(id){drills[id].shown=true;drillRender(id);if(drills[id].cur.audio)playAudio(drills[id].cur.audio);
-  // reveal the grade buttons that just appeared below
   const g=$(id+'_grade'); if(g&&g.scrollIntoView)setTimeout(()=>g.scrollIntoView({behavior:'smooth',block:'center'}),30);}
 function drillGrade(id,ok){const d=drills[id];d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,!!ok);drillNew(id);}
+function drillCheck(id){const d=drills[id];const inp=$(id+'_in');const val=inp?inp.value:'';
+  if(!val.trim())return;
+  const ok=normAns(val)===normAns(d.cur.av);
+  d.shown=true;d.sess.a++;if(ok)d.sess.c++;recDrill(d.key,d.label,ok);
+  drillRender(id);
+  const fb=$(id+'_fb');if(fb){fb.textContent=ok?'Верно! ✓ '+d.cur.av:'Не совсем. Правильно: '+d.cur.av;fb.className='feedback '+(ok?'ok':'no');}
+}
 
 /* ================= VIEWS ================= */
 function go(tab){S.tab=tab;save();
@@ -356,11 +419,16 @@ function renderHome(){
      <div class="az">Я ${S.gender==='f'?'ученица':'ученик'}. · переключи ♂/♀ вверху — речь «о себе» меняется</div>
    </div>
    <div class="tiles">
+     <div class="tile"><b>🔥 ${streak()}</b><small>дней подряд</small></div>
      <div class="tile"><b>${done}/${total}</b><small>уроков</small></div>
-     <div class="tile"><b>${PROG.drill.a}</b><small>тренировок</small></div>
-     <div class="tile"><b>${acc()}%</b><small>верно</small></div>
+     <div class="tile"><b>${learned}</b><small>слов выучено</small></div>
    </div>
-   <div class="prog"><i style="width:${Math.round(100*done/total)}%"></i></div>
+   <div class="card tight">
+     <div style="display:flex;justify-content:space-between;font-size:.85rem"><b>Цель на сегодня</b><span class="az">${Math.min(todayCount(),DAILY_GOAL)} / ${DAILY_GOAL}</span></div>
+     <div class="prog"><i style="width:${Math.min(100,Math.round(100*todayCount()/DAILY_GOAL))}%"></i></div>
+     ${todayCount()>=DAILY_GOAL?'<div class="az">🎉 Цель выполнена! ЛъикӀ!</div>':'<div class="az">Сделай 20 карточек или дриллов сегодня</div>'}
+   </div>
+   <div class="prog" title="прогресс по урокам"><i style="width:${Math.round(100*done/total)}%"></i></div>
    <div class="btnrow" style="margin:12px 0">
      <button class="btn" onclick="openLesson('${next.id}')">${done?'Продолжить':'Начать'}: ${esc(next.t)}</button>
      <button class="btn blue" onclick="go('drill')">Тренировка ∞</button>
@@ -391,7 +459,7 @@ function renderLessons(){
 let curLesson=null, lessonSess=null;
 function openLesson(id){const l=DATA.lessons.find(x=>x.id===id);if(!l)return;curLesson=l;lp(id).seen=true;saveProg();
   go('lessons');
-  const words=(l.words||[]).map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}${w.cls?` <span class="tag">${w.cls==='I'?'кл. I ♂':w.cls==='II'?'кл. II ♀':w.cls==='III'?'кл. III':'мн.'}</span>`:''}</div></div><div class="av">${esc(w.av)}</div></div>`).join('');
+  const words=(l.words||[]).map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}${w.cls?` <span class="tag">${w.cls==='I'?'кл. I ♂':w.cls==='II'?'кл. II ♀':w.cls==='III'?'кл. III':'мн.'}</span>`:''}</div></div><div class="av">${esc(w.av)} ${pron(w.av)}</div></div>`).join('');
   const ex=(l.ex||[]).map((e,i)=>exHTML(l.id,e,i)).join('');
   $('v-lessons').innerHTML=`<span class="back" onclick="renderLessons()">‹ Ко всем урокам</span>
     <h2>${l.emoji} ${esc(l.t)}</h2>
@@ -483,7 +551,7 @@ function showCard(){
    <div class="flash" onclick="flipCard()">
      <div class="kind">${flipped?'аварский':'русский'}</div>
      <div class="big">${esc(flipped?c.av:c.ru)}</div>
-     ${flipped?`<div class="ipa">${esc(c.tag||'')}</div>`:'<div class="tap">нажми, чтобы перевернуть</div>'}
+     ${flipped?`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div><div class="az">${esc(c.tag||'')}</div>`:'<div class="tap">нажми, чтобы перевернуть</div>'}
    </div>
    ${flipped?`<div class="btnrow">
      <button class="btn blk" onclick="gradeCard(0)">Снова</button>
@@ -494,7 +562,7 @@ function showCard(){
 function flipCard(){flipped=!flipped;showCard();}
 function gradeCard(g){const c=deck[ci%deck.length];const key=c.av+'|'+c.ru;
   let b=SRS[key]||0; b=g===0?Math.max(0,b-1):g===2?Math.min(5,b+2):Math.min(5,b+1);
-  SRS[key]=b;saveSrs(); ci++;flipped=false;showCard();}
+  SRS[key]=b;saveSrs(); recDay();saveProg(); ci++;flipped=false;showCard();}
 
 /* ---- REFERENCE ---- */
 let refTab='alpha';
@@ -524,7 +592,7 @@ function renderRefBody(){const b=$('refbody');
       ${DATA.alphabet.map(letterRow).join('')}`;
   } else if(refTab==='phr'){
     b.innerHTML=Object.entries(DATA.phrases).map(([th,arr])=>`<div class="hd"><span class="n">${esc(th[0])}</span><b>${esc(th)}</b></div>
-      <div class="rowlist">${arr.map(p=>`<div class="row"><div class="l"><div class="ru">${esc(p.ru)}</div></div><div class="av">${esc(p.av)}</div></div>`).join('')}</div>`).join('');
+      <div class="rowlist">${arr.map(p=>`<div class="row"><div class="l"><div class="ru">${esc(p.ru)}</div></div><div class="av">${esc(p.av)} ${pron(p.av)}</div></div>`).join('')}</div>`).join('');
   } else if(refTab==='voc'){
     b.innerHTML=`<input type="text" id="vocq" placeholder="Поиск (рус. или авар.)…" oninput="vocSearch()" style="margin-bottom:10px">
       <div id="vocres"></div>`;
@@ -536,7 +604,7 @@ function renderRefBody(){const b=$('refbody');
 function vocSearch(){const q=($('vocq')?.value||'').trim().toLowerCase();
   const all=everyWord();const norm=s=>s.toLowerCase().replace(/[Ӏ]/g,'');
   const res=all.filter(w=>!q||norm(w.ru).includes(norm(q))||norm(w.av).includes(norm(q))).slice(0,120);
-  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="ipa">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)}</div></div>`).join('')}</div>`;
+  $('vocres').innerHTML=`<div class="note">${res.length} слов</div><div class="rowlist">${res.map(w=>`<div class="row"><div class="l"><div class="ru">${esc(w.ru)}</div><div class="az">${esc(w.tag||'')}</div></div><div class="av">${esc(w.av)} ${pron(w.av)}</div></div>`).join('')}</div>`;
 }
 function gramHTML(){return `
   <div class="hd"><span class="n">1</span><b>Классы (роды)</b></div>
@@ -628,8 +696,29 @@ function gramHTML(){return `
     Дун ине, Дой ине. А «приходить» — с показателем: вачӀине / йачӀине / бачӀине.</div>`;
 }
 
+/* ---------------- onboarding ---------------- */
+function maybeOnboard(){
+  if(S.onboarded)return;
+  const o=document.createElement('div'); o.id='onb';
+  o.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(8,11,17,.92);display:flex;align-items:center;justify-content:center;padding:18px';
+  o.innerHTML=`<div class="card" style="max-width:360px;text-align:center;margin:0">
+    <div style="font-size:2.4rem">🏔️</div>
+    <h2>ВорчӀами! Добро пожаловать</h2>
+    <p class="lead">Это курс аварского для русскоговорящих. Ты заговоришь с первого урока.</p>
+    <p class="lead">Курс подстраивается под тебя: когда говоришь <b>о себе</b>, окончания зависят от того,
+      парень ты (класс I «<b>в</b>»: Дун вуго) или девушка (класс II «<b>й</b>»: Дун йиго).</p>
+    <div class="btnrow" style="margin-top:6px">
+      <button class="btn" onclick="pickGender('m')">♂ Я парень</button>
+      <button class="btn blue" onclick="pickGender('f')">♀ Я девушка</button>
+    </div>
+    <p class="note" style="margin-top:10px">Поменять можно в любой момент — кнопка «Я» вверху справа.
+      А кнопка «Произн.» покажет произношение [IPA] у всех слов.</p></div>`;
+  document.body.appendChild(o);
+}
+function pickGender(g){S.gender=g;S.onboarded=true;save();applyToggles();const o=$('onb');if(o&&o.remove)o.remove();renderAll();}
+
 /* ---------------- boot ---------------- */
-applyToggles();renderAll();go(S.tab);
+applyToggles();renderAll();go(S.tab);maybeOnboard();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 </script>
 </body>
