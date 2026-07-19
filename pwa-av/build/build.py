@@ -1061,7 +1061,12 @@ def _arabcard(e):
     return {"ru": ru.split(",")[0].split(";")[0].strip(), "av": n(av),
             "ar": ar, "tr": tr, "orig": orig, "form": form, "tag": "арабизм"}
 ARAB_CARDS = [_arabcard(e) for e in ARAB]      # frequency-sorted
-ARAB_MAIN_N = 250                              # частые / редкие split
+# card decks divided into frequency bands (lesson shows only the very top)
+ARAB_BANDS = [
+    ("частые · 1–150",   ARAB_CARDS[:150]),
+    ("средние · 151–350", ARAB_CARDS[150:350]),
+    ("редкие · 351+",     ARAB_CARDS[350:]),
+]
 _TOP = 72                                      # shown in the lesson table
 _arab_rows = "".join(
   f'<tr><td class="v">{n(av)}</td><td>{ru}</td>'
@@ -1315,8 +1320,7 @@ DATA = {
  "phrases": {k:[{"av":n(a),"ru":r} for a,r in v] for k,v in PHRASES.items()},
  "texts": [{"lvl":t["lvl"],"title":t["title"],"note":t.get("note",""),
             "lines":[{"av":n(a),"ru":r} for a,r in t["lines"]]} for t in TEXTS],
- "arab": {"main": [enrich(w) for w in ARAB_CARDS[:ARAB_MAIN_N]],
-          "rare": [enrich(w) for w in ARAB_CARDS[ARAB_MAIN_N:]]},
+ "arab": {"bands": [{"title": t, "words": [enrich(w) for w in ws]} for t, ws in ARAB_BANDS]},
  "verbs": [{**v,"inf":n(v["inf"]),"obj":n(v["obj"]),"pres":n(v["pres"]),
             "past":n(v["past"]),"imp":n(v["imp"]),
             **({"fut":n(v["fut"])} if v.get("fut") else {}),
