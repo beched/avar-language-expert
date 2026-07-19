@@ -1,5 +1,5 @@
 // Bump CACHE on every content change or clients keep the stale copy.
-const CACHE = 'avar-course-v42';
+const CACHE = 'avar-course-v43';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', e => {
