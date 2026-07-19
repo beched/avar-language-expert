@@ -9,6 +9,7 @@ Pedagogy rule: every word used in a lesson's examples/drills is listed in that
 lesson's `words` (introduced explicitly) or an earlier lesson. Palochka = Ӏ U+04C0.
 """
 import json, os, re
+from arabisms import ARAB
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 def P(*a): return os.path.join(HERE, *a)
@@ -911,6 +912,39 @@ L(id="local", emoji="🧭", t="Местные падежи: 5 серий", sub="
    {"t":"say","q":"Скажи «на улице» (у/при, ‑хъ)","ans":"къватӀахъ"},
   ], drill={"gen":"series"})
 
+# ---- C1: arabisms — high-register vocabulary + its Arabic source ------------
+_arab_rows = "".join(
+  f'<tr><td class="v">{n(av)}</td><td>{ru}</td>'
+  f'<td dir="rtl" lang="ar" style="font-size:1.15rem">{ar}</td>'
+  f'<td class="az">{tr}{(" · "+orig) if orig else ""}{("<br>"+form) if form else ""}</td></tr>'
+  for (av, ru, ar, tr, orig, form) in ARAB)
+L(id="arab", emoji="☪️", t="Арабизмы", sub="C1: книжная лексика и её арабский первоисточник",
+  teach="""
+<p class="lead">Сотни лет через Коран и науку в аварский вошли <b>арабизмы</b> — они и есть «высокий стиль»:
+на них говорит газета, книга, проповедь. Выучив их, вы <u>одновременно</u> набираете и арабский словарь.</p>
+<div class="callout b"><b>Как читать таблицу:</b> аварское слово · значение · <b>арабский оригинал с огласовкой</b> ·
+транскрипция и (если сместилось) исходный смысл + форма. Например <b>ихванал</b> «братья» — это аварское
+множественное <b>‑ал</b>, надетое на арабское <b>إِخْوَان</b> <i>iḵwān</i>, которое само уже мн. число от <b>أخ</b>
+<i>aḵ</i> «брат» — двойное множественное!</div>
+<div class="callout g"><b>Смысл часто сместился.</b> захӀмат в аварском — «труд, старание», а в арабском
+<b>زَحْمَة</b> <i>zaḥma</i> — «теснота, давка». Слова пришли века назад и «застыли» в старом значении.</div>
+<h3>Самые частые арабизмы (по корпусу газеты «ХӀакъикъат»)</h3>
+<p class="az">Эти ~60 слов покрывают огромную долю арабизмов в прессе. Дальше — списки по частотности.</p>
+<table class="vguide arabtbl">
+<tr class="head"><td>авар.</td><td>значение</td><td>عربي</td><td>транскрипция · форма</td></tr>
+%s
+</table>
+<div class="callout b">Учить лучше по частотности: сначала эти, самые ходовые. 100–300 арабизмов —
+и вы понимаете газету, новости, книги на абстрактные темы.</div>
+""" % _arab_rows,
+  words=[W(ru.split(",")[0].split(";")[0].strip(), av) for (av, ru, ar, tr, orig, form) in ARAB],
+  ex=[
+   {"t":"mcq","q":"«ихванал» (братья) — как устроено слово?","opts":["араб. мн. iḵwān + авар. мн. ‑ал","чисто аварское","из русского"],"a":0},
+   {"t":"mcq","q":"Арабское слово «زَمَان» (zamān) в аварском —","opts":["заман (время)","замок","земля"],"a":0},
+   {"t":"mcq","q":"«хӀакъикъат» (истина) — от арабского корня…","opts":["ḥ-q-q «быть истинным»","k-t-b «писать»","s-l-m «мир»"],"a":0},
+   {"t":"mcq","q":"«ислам» — это масдар (имя действия) от корня s-l-m, буквально…","opts":["покорность (Богу)","война","знание"],"a":0},
+  ])
+
 # ---- top up every lesson to >=6 exercises with vocab-recall MCQs -----------
 # distractors come from the same lesson's already-introduced words -> always correct.
 def _short(av): return 1 <= len(av.split()) <= 2 and "…" not in av
@@ -1038,10 +1072,10 @@ SERIES = [
 LVL = {"alpha":"A0","class":"A1","plur":"A1","greet":"A1","this":"A1","my":"A1","adj":"A1","num":"A1",
  "pres":"A2","want":"A2","neg":"A2","past":"A2","fut":"A2","imper":"A2","quest":"A2",
  "place":"A2","talk":"A2","loan":"A2","vforms":"B1","cases":"B1","cond":"B1",
- "converb":"B2","local":"B2","conj":"B1"}
+ "converb":"B2","local":"B2","conj":"B1","arab":"C1"}
 for _l in LESSONS: _l["lvl"] = LVL.get(_l["id"], "")
 # display lessons in CEFR order; stable sort keeps the pedagogical order WITHIN each level
-_RANK = {"A0": 0, "A1": 1, "A2": 2, "B1": 3, "B2": 4, "": 9}
+_RANK = {"A0": 0, "A1": 1, "A2": 2, "B1": 3, "B2": 4, "C1": 5, "": 9}
 LESSONS.sort(key=lambda l: _RANK.get(l.get("lvl", ""), 9))
 
 # ---------------------------------------------------------------- DRILL POOLS

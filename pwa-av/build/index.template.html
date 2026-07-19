@@ -58,6 +58,9 @@ section.view.on{display:block;animation:fade .22s ease}
 .vguide{width:100%;border-collapse:collapse;font-size:.9rem;margin:8px 0}
 .vguide td{border:1px solid var(--line);padding:6px 9px;vertical-align:middle}
 .vguide .v{color:var(--gold);font-weight:700}
+.arabtbl{font-size:.82rem}
+.arabtbl td{padding:5px 7px}
+.arabtbl td[lang="ar"]{color:var(--gold);white-space:nowrap;text-align:right}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin:12px 0}
 .card.tight{padding:11px 13px}.card h3:first-child{margin-top:0}
@@ -493,7 +496,8 @@ function resetAll(){if(confirm('Сбросить весь прогресс и к
 /* ---- LESSONS ---- */
 const LVL_INFO={A0:{t:'A0 · Звуки',d:'алфавит и произношение'},A1:{t:'A1 · Основы',d:'классы, «есть», семья, числа'},
   A2:{t:'A2 · Речь',d:'времена, вопросы, повседневное'},B1:{t:'B1 · Продвинутое',d:'формы глагола, падежи, условное'},
-  B2:{t:'B2 · Тонкости',d:'деепричастия, связки, 5 серий падежей'}};
+  B2:{t:'B2 · Тонкости',d:'деепричастия, связки, 5 серий падежей'},
+  C1:{t:'C1 · Высокий стиль',d:'арабизмы и их арабский первоисточник'}};
 function renderLessons(){
   let html=`<h2>Дарсал · Уроки</h2>
    <p class="lead">Иди по порядку: каждый урок вводит новые слова и сразу даёт их отработать.
