@@ -317,10 +317,10 @@ const GEN={
      return {ru:'Я хочу '+v.objRu,av:'Дие '+v.obj+' бокьун буго',tag:'хочу'};}
    const v=pick(DATA.verbs);return {ru:'Я умею '+v.ru,av:'Дида '+v.inf+' кӀола',tag:'могу'};},
  neg(){if(Math.random()<0.5){const cls=pick(['I','II','III']);const w=pick(P[cls]);
-     return {ru:cap(w.ru)+' — нет',av:cap(w.av)+' гьечӀо',tag:'нет'};}
+     return {ru:cap(w.ru)+' отсутствует (нет)',av:cap(w.av)+' гьечӀо',tag:'нет'};}
    const v=pick(DATA.verbs);return {ru:'Я не '+v.presRu,av:'Дун '+v.pres+'ро',tag:'‑ро'};},
  past(){if(Math.random()<0.55){const c=selfCls();
-     return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'йачӀана':'вачӀана'),tag:'прош. время'};}
+     return {ru:'Я '+(S.gender==='f'?'пришла':'пришёл'),av:'Дун '+(c==='II'?'ячӀана':'вачӀана'),tag:'прош. время'};}
    const v=pick(DATA.verbs.filter(v=>v.tr));return {ru:'Я '+v.pastRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.past,tag:'прош. время'};},
  imper(){const g=pick([{ru:'Возьми!',av:'Босе!'},{ru:'Смотри!',av:'Балагье!'},{ru:'Кушай!',av:'Кванай!'},
      {ru:'Приходи!',av:'ВачӀа!'},{ru:'Пиши!',av:'Хъвай!'},{ru:'Читай!',av:'ЦӀале!'},
