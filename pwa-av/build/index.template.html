@@ -538,8 +538,13 @@ function finishLesson(id){const l=lp(id);l.done=true;l.seen=true;saveProg();open
   const wrap=$('v-lessons');const b=document.createElement('div');b.className='callout g';b.innerHTML='🎉 Урок отмечен пройденным! ЛъикӀ буго!';wrap.insertBefore(b,wrap.firstChild);window.scrollTo(0,0);}
 
 function exHTML(lid,e,i){const eid=lid+'_e'+i;
-  if(e.t==='mcq'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">${esc(e.q)}</div>
-    ${e.opts.map((o,k)=>`<button class="opt" id="${eid}_${k}" onclick="ansMcq('${lid}','${eid}',${k},${e.a})">${esc(o)}</button>`).join('')}
+  if(e.t==='mcq'){
+    // shuffle option order each render so the correct answer isn't always first
+    const idx=e.opts.map((_,k)=>k);
+    for(let j=idx.length-1;j>0;j--){const r=Math.floor(Math.random()*(j+1));const t=idx[j];idx[j]=idx[r];idx[r]=t;}
+    const opts=idx.map(k=>e.opts[k]), ansPos=idx.indexOf(e.a);
+    return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">${esc(e.q)}</div>
+    ${opts.map((o,k)=>`<button class="opt" id="${eid}_${k}" onclick="ansMcq('${lid}','${eid}',${k},${ansPos})">${esc(o)}</button>`).join('')}
     <div class="feedback" id="${eid}_fb"></div></div>`;}
   if(e.t==='say'){return `<div class="card tight"><div style="font-weight:600;margin-bottom:6px">🗣️ ${esc(e.q)}</div>
     <button class="btn blue sm" onclick="$('${eid}_a').style.display='block'">Показать ответ</button>
@@ -665,6 +670,7 @@ function renderRef(){
      <button class="${refTab==='phr'?'on':''}" onclick="refSet('phr')">💬 Разговорник</button>
      <button class="${refTab==='voc'?'on':''}" onclick="refSet('voc')">📖 Словарь</button>
      <button class="${refTab==='gram'?'on':''}" onclick="refSet('gram')">📐 Грамматика</button>
+     <button class="${refTab==='txt'?'on':''}" onclick="refSet('txt')">📚 Тексты</button>
    </div><div id="refbody"></div>`;
   renderRefBody();
 }
@@ -689,6 +695,13 @@ function renderRefBody(){const b=$('refbody');
     b.innerHTML=`<input type="text" id="vocq" placeholder="Поиск (рус. или авар.)…" oninput="vocSearch()" style="margin-bottom:10px">
       <div id="vocres"></div>`;
     vocSearch();
+  } else if(refTab==='txt'){
+    b.innerHTML=`<div class="callout b">Читай по-аварски и проверяй себя переводом. Для «продукции»
+      закрой аварскую строку и переведи с русского сам.</div>`+
+      (DATA.texts||[]).map(t=>`
+      <div class="hd"><span class="n">${esc(t.lvl)}</span><b>${esc(t.title)}</b></div>
+      ${t.note?`<div class="az" style="margin:2px 0 6px">${esc(t.note)}</div>`:''}
+      <div class="rowlist">${t.lines.map(l=>`<div class="row"><div class="l"><div class="av" style="font-weight:600">${esc(l.av)} ${pron(l.av)}</div><div class="ru az">${esc(l.ru)}</div></div></div>`).join('')}</div>`).join('');
   } else {
     b.innerHTML=gramHTML();
   }
