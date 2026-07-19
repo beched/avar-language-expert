@@ -346,6 +346,8 @@ const GEN={
  cond(){return {...pick(DATA.conds),tag:'условное'};},
  casemix(){return Math.random()<0.5?GEN.cases():GEN.localcase();},
  series(){const s=pick(DATA.series);return {ru:s.ru,av:s.av,tag:'местные падежи'};},
+ arab(){const P=DATA.arab||{};const pool=(P.main||[]).concat(P.rare||[]);const w=pick(pool)||{ru:'',av:''};
+   return {ru:w.ru,av:w.av,ar:w.ar,tr:w.tr,orig:w.orig,form:w.form,tag:'☪️ '+(w.ar||'')+' · '+(w.tr||'')};},
  converb(){return {...pick([
      {ru:'прочитав (деепр.)',av:'цӀалун'},{ru:'читая (деепр.)',av:'цӀалулаго'},
      {ru:'чтобы прочитать',av:'цӀализелъун'},{ru:'поскольку есть',av:'бугелъул'},
@@ -579,6 +581,8 @@ function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
 let deck=[],ci=0,flipped=false,cmode='all',cardDir='ru2av';
 function everyWord(){
   const out=allVocab(); const map=new Map(out.map(w=>[w.av+'|'+w.ru,w]));
+  [...(DATA.arab?.main||[]),...(DATA.arab?.rare||[])].forEach(w=>{const key=w.av+'|'+w.ru;
+    if(!map.has(key)){map.set(key,{...w,tag:'арабизм'});out.push({...w,tag:'арабизм'});}});
   (DATA.freq||[]).forEach(L=>L.words.forEach(w=>{const key=w.av+'|'+w.ru;
     const e=map.get(key);
     if(e){ if(w.ex&&!e.ex)e.ex=w.ex; if(w.forms&&!e.forms)e.forms=w.forms; if(w.alts&&!e.alts)e.alts=w.alts; }
@@ -600,6 +604,10 @@ function renderCards(){
       ${freqChips}
     </div>
     <div class="chips">
+      <span class="chip b ${cmode==='arab:main'?'on':''}" onclick="cmSet('arab:main')">☪️ Арабизмы · частые (${(DATA.arab?.main||[]).length})</span>
+      <span class="chip b ${cmode==='arab:rare'?'on':''}" onclick="cmSet('arab:rare')">☪️ Арабизмы · редкие (${(DATA.arab?.rare||[]).length})</span>
+    </div>
+    <div class="chips">
       ${DATA.themes.map(t=>`<span class="chip ${cmode===t.id?'on':''}" onclick="cmSet('${t.id}')">${t.emoji} ${esc(t.title)}</span>`).join('')}
     </div>
     <div id="cardbox"></div>`;
@@ -610,6 +618,8 @@ function cardDirSet(d){cardDir=d;flipped=false;renderCards();}
 function buildDeck(){
   let src;
   if(cmode==='all') src=everyWord();
+  else if(cmode==='arab:main') src=(DATA.arab?.main||[]).map(w=>({...w,tag:'Арабизмы · частые'}));
+  else if(cmode==='arab:rare') src=(DATA.arab?.rare||[]).map(w=>({...w,tag:'Арабизмы · редкие'}));
   else if(cmode.startsWith('freq:')){const L=(DATA.freq||[]).find(x=>'freq:'+x.id===cmode);src=(L?L.words:[]).map(w=>({...w,tag:L?L.title:''}));}
   else src=(DATA.themes.find(t=>t.id===cmode)?.words||[]).map(w=>({...w,tag:cmode}));
   // spaced: prioritise low box
@@ -620,6 +630,12 @@ function altStr(a){return (typeof a==='string')?{av:a}:a;}   // back-compat
 function cardReveal(c){
   // rich back of the card: pronunciation, usage example, forms, synonyms (each with its example)
   let h=`<div class="ipa" style="font-size:1rem">[${esc(translit(c.av))}]</div>`;
+  if(c.ar){  // arabism: show the Arabic source, transliteration, original meaning & form
+    h+=`<div class="divider"></div><div style="font-size:.8rem;color:var(--muted)">арабский первоисточник:</div>`
+      +`<div dir="rtl" lang="ar" style="font-size:1.5rem;color:var(--gold)">${esc(c.ar)}</div>`
+      +`<div class="az" style="font-size:.85rem">${esc(c.tr)}${c.orig?` — «${esc(c.orig)}»`:''}</div>`
+      +(c.form?`<div class="az" style="font-size:.75rem;color:var(--muted)">${esc(c.form)}</div>`:'');
+  }
   if(c.ex) h+=`<div class="divider"></div><div class="av" style="font-size:1.05rem">${esc(c.ex.av)}</div><div class="az">${esc(c.ex.ru)}</div>`;
   if(c.forms&&c.forms.length>1) h+=`<div class="divider"></div><div class="az" style="font-size:.78rem">формы: <span class="av" style="font-weight:400">${c.forms.slice(0,6).map(esc).join(' · ')}</span></div>`;
   const senses=(c.senses||[]).filter(Boolean);
