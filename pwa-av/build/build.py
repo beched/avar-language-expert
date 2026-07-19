@@ -989,6 +989,9 @@ LVL = {"alpha":"A0","class":"A1","plur":"A1","greet":"A1","this":"A1","my":"A1",
  "place":"A2","talk":"A2","loan":"A2","vforms":"B1","cases":"B1","cond":"B1",
  "converb":"B2","local":"B2","conj":"B1"}
 for _l in LESSONS: _l["lvl"] = LVL.get(_l["id"], "")
+# display lessons in CEFR order; stable sort keeps the pedagogical order WITHIN each level
+_RANK = {"A0": 0, "A1": 1, "A2": 2, "B1": 3, "B2": 4, "": 9}
+LESSONS.sort(key=lambda l: _RANK.get(l.get("lvl", ""), 9))
 
 # ---------------------------------------------------------------- DRILL POOLS
 # class-tagged, all introduced in lessons; keeps generated sentences correct
