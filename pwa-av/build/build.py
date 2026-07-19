@@ -1061,7 +1061,7 @@ def _arabcard(e):
     return {"ru": ru.split(",")[0].split(";")[0].strip(), "av": n(av),
             "ar": ar, "tr": tr, "orig": orig, "form": form, "tag": "арабизм"}
 ARAB_CARDS = [_arabcard(e) for e in ARAB]      # frequency-sorted
-ARAB_MAIN_N = 180                              # частые / редкие split
+ARAB_MAIN_N = 250                              # частые / редкие split
 _TOP = 72                                      # shown in the lesson table
 _arab_rows = "".join(
   f'<tr><td class="v">{n(av)}</td><td>{ru}</td>'
