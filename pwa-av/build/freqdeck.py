@@ -59,6 +59,8 @@ OVER = {
  "поздно":"кватӀун","обязанность":"вазипа","закрыть":"бацизе",
  "собственный":"бетӀергьанаб","легко":"бигьаго","тяжело":"бакӀго",
  "рисунок":"сурат",
+ # pin standard forms after the dictionary update shifted these to variants/homonyms:
+ "помочь":"квербакъизе","сразу":"тӀанкӀан","родина":"ватӀан","живой":"чӀагояб","привычный":"ругьунаб",
 }
 # supplement (AV-frequency) words to skip: directional/redundant forms
 SUPP_DROP = {"цебеса","лахӀ"}   # лахӀ=сажа/мишень — never a good everyday supplement word
