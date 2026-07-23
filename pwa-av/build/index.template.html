@@ -370,6 +370,31 @@ const GEN={
      {ru:'потом, затем',av:'цинги'},{ru:'конечно',av:'узухъда'},{ru:'поэтому, значит',av:'гьединлъидал'}]),tag:'заимствования'};},
  talk(){return pick([GEN.greet(),GEN.copula(),GEN.possess(),GEN.num(),GEN.past(),GEN.quest(),GEN.loan()]);},
  vocab(words){const w=pick(words);return {ru:w.ru,av:w.av,tag:'слова'};},
+ // GENUINELY COMBINED sentences: each output exercises 2-4 grammar features at once
+ // (possessive + adjective agreement + copula; demonstrative + class; ergative + tense; number …)
+ combo(){
+   const t=Math.floor(Math.random()*6);
+   const cls=pick(['I','II','III']);
+   const n=pick(P[cls]);
+   const adjPool=cls==='III'?P.adj:(P.adj.filter(a=>a.p).length?P.adj.filter(a=>a.p):P.adj);
+   const a=pick(adjPool);
+   const RUmy=cls==='II'?'Моя':cls==='III'?'Моё':'Мой';
+   if(t===0) // притяж. + согласование прилаг. + связка
+     return {ru:RUmy+' '+a.ru+' '+n.ru+' (есть)',av:'Дир '+agreeAdj(a.av,cls)+' '+n.av+' '+cop(cls),tag:'дир + сифат + вуго'};
+   if(t===1) // сказуемое: класс + согласованное прилаг. + связка
+     return {ru:cap(n.ru)+' — '+a.ru,av:cap(n.av)+' '+agreeAdj(a.av,cls)+' '+cop(cls),tag:'класс + сказуемое'};
+   if(t===2) // указательное + класс + связка
+     return {ru:(cls==='I'?'Тот':cls==='II'?'Та':'То')+' — '+n.ru,av:DEM[cls]+' '+n.av+' '+cop(cls),tag:'указат. + класс'};
+   if(t===3){ // число + класс + связка
+     const num=pick(DATA.numbers);
+     return {ru:num.ru+' × '+n.ru,av:num.av+' '+n.av+' '+cop(cls),tag:'число + класс'};}
+   if(t===4){ // эргатив + дополнение + наст. время
+     const v=pick(DATA.verbs.filter(x=>x.tr));
+     return {ru:'Я '+v.presRu+' '+v.objRu,av:'Дица '+v.obj+' '+v.pres,tag:'эргатив + наст.'};}
+   // t===5: о себе — самокласс + согласованное прилаг. + связка (учитывает пол)
+   const sc=selfCls(); const sa=pick(P.adj.filter(x=>x.p).length?P.adj.filter(x=>x.p):P.adj);
+   return {ru:'Я '+sa.ru+(sc==='II'?' (ж.)':' (м.)'),av:'Дун '+agreeAdj(sa.av,sc)+' '+cop(sc),tag:'о себе + сифат'};
+ },
 };
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 function capital(s){return cap(s);}
@@ -379,6 +404,15 @@ function plural(ru,num){return ru;} // keep russian noun simple in gloss
 function genFor(spec){
   if(!spec) return GEN.vocab(allVocab());
   if(spec.gen==='vocab') return GEN.vocab(spec.words&&spec.words.length?spec.words:allVocab());
+  if(spec.gen==='cumulative'){
+    // this lesson + everything before it, GENUINELY mixed (biased toward combined sentences)
+    const gens=DATA.lessons.slice(0,spec.upto+1)
+      .map(l=>l.drill&&l.drill.gen).filter(g=>g&&GEN[g]&&g!=='cumulative');
+    // combined-sentence generators weighted heavily so topics actually combine, not just alternate
+    const pool=gens.concat(['combo','combo','combo']);
+    const g=pool[Math.floor(Math.random()*pool.length)];
+    return (GEN[g]?GEN[g]:GEN.combo)();
+  }
   const f=GEN[spec.gen]; return f?f():GEN.vocab(allVocab());
 }
 
@@ -563,20 +597,34 @@ function ansMcq(lid,eid,k,a){const ok=k===a;
 }
 
 /* ---- DRILL TAB ---- */
-const DR={cur:null};
+const DR={cur:null,cumul:false,curKey:null};
 function renderDrill(){
-  const presets=DATA.lessons.filter(l=>l.drill).map(l=>({key:'L:'+l.id,label:l.t,spec:l.drill,emoji:l.emoji}));
-  presets.unshift({key:'G:all',label:'Все слова (перемешать)',spec:{gen:'vocab',words:[]},emoji:'🎲'});
-  if(!DR.cur)DR.cur=presets[1]||presets[0];
+  const cumul=DR.cumul;
+  const lessonPresets=DATA.lessons.map((l,i)=>({l,i})).filter(x=>x.l.drill).map(({l,i})=>({
+    key:'L:'+l.id,label:l.t,emoji:l.emoji,
+    spec: cumul?{gen:'cumulative',upto:i}:l.drill}));
+  const presets=lessonPresets.slice();
+  presets.unshift({key:'G:combo',label:'Комбо — всё сразу',spec:{gen:'combo'},emoji:'🎯'});
+  presets.unshift({key:'G:all',label:'Все слова',spec:{gen:'vocab',words:[]},emoji:'🎲'});
+  // keep the previously-selected chip by key across re-renders / mode switches
+  DR.cur=presets.find(p=>p.key===DR.curKey)||presets[2]||presets[0];
+  DR.curKey=DR.cur.key;
   $('v-drill').innerHTML=`<h2>Гьунар · Тренировка</h2>
     <p class="lead">Выбери тему — задания бесконечные. Прочитай вслух, потом «Показать ответ».</p>
+    <div class="chips" style="margin-bottom:4px">
+      <span class="chip b ${!cumul?'on':''}" onclick="drCumul(false)">Только эта тема</span>
+      <span class="chip b ${cumul?'on':''}" onclick="drCumul(true)">Тема + всё пройденное (комбо)</span>
+    </div>
+    ${cumul?`<div class="callout b" style="font-size:.8rem">Нарастающий режим: задания <b>совмещают</b> выбранную тему
+      со всем материалом до неё — не по очереди, а в одном предложении (класс + падеж + время + согласование…).</div>`:''}
     <div class="chips" id="drchips">${presets.map(p=>`<span class="chip ${DR.cur.key===p.key?'on':''}" onclick="drSet('${p.key}')">${p.emoji} ${esc(p.label)}</span>`).join('')}</div>
     ${drillHTML('main')}`;
   DR._presets=presets;
   drillMount('main',DR.cur.spec,DR.cur.key,DR.cur.label);
   DR.render=()=>renderDrill();
 }
-function drSet(key){DR.cur=DR._presets.find(p=>p.key===key);renderDrill();}
+function drSet(key){DR.curKey=key;renderDrill();}
+function drCumul(v){DR.cumul=v;renderDrill();}
 
 /* ---- CARDS (SRS) ---- */
 let deck=[],ci=0,flipped=false,cmode='all',cardDir='ru2av';
