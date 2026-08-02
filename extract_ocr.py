@@ -12,18 +12,27 @@ Requires: tesseract with Russian language pack
 
 import pytesseract
 from pdf2image import convert_from_path
+from collections import Counter
 from pathlib import Path
+
+from avar_ocr_fix import Lexicon, fix
 
 # Configuration
 PDF_FILE = "sources/Avar Language Guide.pdf"
 OUTPUT_FILE = "docs/avar_language_guide.md"
 DESCRIPTION = "Russian self-learning guide to Avar language"
-LANG = "rus+eng"  # Russian + English for mixed content
-DPI = 200  # Balance between quality and speed
+# Russian ONLY. Adding "eng" makes tesseract read Avar words as Latin
+# (букӀунеб comes back as `6yxlyne6`); the book contains no English at all.
+LANG = "rus"
+DPI = 300  # 200 loses the palochka diacritic context
 
 
 def extract_with_ocr(pdf_path: Path, output_path: Path, description: str) -> int:
     """Extract text from scanned PDF using OCR."""
+    print("Loading Avar lexicon...")
+    lexicon = Lexicon()
+    stats = Counter()
+
     print(f"Converting PDF to images (DPI={DPI})...")
     
     # Convert PDF pages to images
@@ -46,6 +55,10 @@ def extract_with_ocr(pdf_path: Path, output_path: Path, description: str) -> int
             
             # Run OCR
             text = pytesseract.image_to_string(image, lang=LANG)
+            # No OCR engine has the palochka Ӏ in its alphabet, so raw output
+            # contains zero correct Avar words. Repair it before writing.
+            text, page_stats = fix(text, lexicon)
+            stats.update(page_stats)
             text = text.strip()
             
             if text:
@@ -54,7 +67,8 @@ def extract_with_ocr(pdf_path: Path, output_path: Path, description: str) -> int
                 pages_extracted += 1
         
         print()  # New line after progress
-    
+
+    print(f"  post-correction: {dict(stats)}")
     return pages_extracted
 
 

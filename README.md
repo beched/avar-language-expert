@@ -49,8 +49,10 @@ python extract_html.py        # clean HTML grammars → MD
 python extract_telegram.py    # Telegram HTML exports → MD
 python extract_wiki.py        # Wikipedia XML → MD (needs mwparserfromhell)
 python extract_pdfs.py        # text-layer PDFs (needs pdfplumber)
+node extract_pdf_inspector.mjs # multi-column text-layer PDFs (needs @firecrawl/pdf-inspector)
 python extract_sokolenok.py   # 2-column children's magazine
-python extract_ocr.py         # scanned PDFs (needs tesseract, pdf2image, pytesseract)
+python extract_ocr.py         # scanned PDFs (needs tesseract, pdf2image, pytesseract, rapidfuzz)
+python avar_ocr_fix.py report docs/avar_language_guide.md   # audit OCR post-correction
 ```
 
 Dependencies are intentionally not pinned in a `requirements.txt` — install as needed:

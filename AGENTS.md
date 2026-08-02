@@ -19,8 +19,8 @@ This directory contains materials about the Avar (Avaric) language, structured f
 │   ├── av-ru.dictionary.jsonl       # ★ PRIMARY: Structured Avar → Russian dictionary
 │   ├── avar_dictionary.md           # ★ PRIMARY: Generated readable dictionary for search
 │   ├── modern_avar_language.md     # ⚠ PDF extraction, has OCR errors
-│   ├── avar_language_guide.md      # ⚠ OCR extraction, noisy
-│   └── russian_avar_dictionary.md  # ⚠ PDF extraction, formatting issues
+│   ├── avar_language_guide.md      # OCR + palochka post-correction
+│   └── russian_avar_dictionary.md  # ⚠ PDF extraction (pdfplumber), formatting issues
 │
 ├── sources/                        # Original files
 │   ├── avar-language.html          # Clean HTML (1967 grammar)
@@ -37,9 +37,11 @@ This directory contains materials about the Avar (Avaric) language, structured f
 ├── build_dictionary.py             # JSONL dictionary → SQLite + Markdown
 ├── extract_html.py                 # HTML → Markdown converter
 ├── extract_telegram.py             # Telegram exports → clean text
-├── extract_pdfs.py                 # PDF text extraction
+├── extract_pdfs.py                 # PDF text extraction (pdfplumber)
+├── extract_pdf_inspector.mjs       # PDF text extraction (layout-aware, multi-column)
 ├── extract_sokolenok.py            # 2-column PDF extraction (magazine)
-├── extract_ocr.py                  # OCR for scanned PDFs
+├── extract_ocr.py                  # OCR for scanned PDFs (tesseract -l rus)
+├── avar_ocr_fix.py                 # OCR post-correction: palochka + avar.db lookup
 ├── extract_wiki.py                 # Wikipedia XML extraction
 └── AGENTS.md                       # This file
 ```
@@ -59,8 +61,8 @@ This directory contains materials about the Avar (Avaric) language, structured f
 | `av-ru.dictionary.jsonl` | ★★★ Excellent | 22,842 entries | Canonical structured Avar → Russian dictionary from [`avar-me/sources`](https://github.com/avar-me/sources) |
 | `avar_dictionary.md` | ★★★ Excellent | generated | Human-readable dictionary, forms, senses, examples |
 | `avar_wikipedia.md` | ★★☆ Good | 100,888 | Real-world Avar text examples |
-| `russian_avar_dictionary.md` | ★☆☆ Poor | 61,694 | Archival PDF extraction only; prefer generated dictionary |
-| `avar_language_guide.md` | ★☆☆ Poor | 9,038 | Reference only (OCR noise) |
+| `russian_avar_dictionary.md` | ★☆☆ Poor | 61,694 | Archival pdfplumber extraction; prefer generated dictionary. A layout-aware re-extraction is available via `extract_pdf_inspector.mjs` but is not the committed version — see notes.md |
+| `avar_language_guide.md` | ★★☆ Fair | 9,081 | OCR (tesseract `-l rus`) + palochka/dictionary post-correction; committed copy is a partial run — rerun `extract_ocr.py` for full palochka recovery (see notes.md) |
 | `modern_avar_language.md` | ★☆☆ Poor | 17,706 | Reference only (OCR artifacts) |
 | `notes.md` | ★★★ Curated | — | Non-obvious grammar patterns, examples |
 
@@ -217,9 +219,15 @@ pip install mwparserfromhell && python extract_wiki.py
 # PDFs (lower quality, text extraction)
 pip install pdfplumber && python extract_pdfs.py
 
+# Layout-aware alternative for multi-column PDFs (no OCR):
+npm install @firecrawl/pdf-inspector && node extract_pdf_inspector.mjs
+
 # Children's magazine (2-column PDF)
 python extract_sokolenok.py
 
 # Scanned PDFs (requires OCR with tesseract)
-pip install pdf2image pytesseract && python extract_ocr.py
+pip install pdf2image pytesseract rapidfuzz && python extract_ocr.py
+
+# Review remaining unknown tokens and their nearest dictionary matches:
+python avar_ocr_fix.py report docs/avar_language_guide.md
 ```
