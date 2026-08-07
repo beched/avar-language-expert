@@ -44,9 +44,9 @@ PALOCHKA_BASES = "гкхцчт" + "xktc"  # + Latin lookalikes of those bases
 PALOCHKA_LOOKALIKES = "IlІіiї1|/!\\Įĺľ[]{}()"
 
 # Capital letters tesseract also uses for the palochka (ЦТияб = цӀияб,
-# ГЛалиева = ГӀалиева). These are ambiguous -- "ТА" is a real letter pair --
-# so they are only applied when the result is a word the lexicon knows.
-PALOCHKA_CAPITALS = "ГЛТАШ"
+# ГЛалиева = ГӀалиева, ЦИияб = ЦӀияб). These are ambiguous -- "ТА" is a real
+# letter pair -- so they are only applied when the result is a known word.
+PALOCHKA_CAPITALS = "ГЛТАШИНП"
 
 # Avar-only digraphs. Effectively absent from Russian orthography, so they are
 # a reliable signal that a token is Avar and safe to correct against the Avar
@@ -80,8 +80,11 @@ LATIN = re.compile(r"[a-zA-Z]")
 # Lines the extractor writes itself (headings, blockquote, source note). These
 # are English on purpose and must survive the Latin-homoglyph pass.
 MARKDOWN_CHROME = re.compile(r"\s*(#{1,6}\s|>|\*Source:|---\s*$)")
-# A token is a run of letters/digits/palochka-lookalikes plus internal hyphens.
-TOKEN = re.compile(r"[^\W_]+(?:-[^\W_]+)*", re.UNICODE)
+# A token is a run of letters/digits plus internal hyphens. `@` and `/` are
+# admitted as internal characters because tesseract prints them inside words
+# (кӏиго -> к@го, анцӏила -> ани/Гила); left out, they split the word in two
+# and the damage becomes invisible to every rule below.
+TOKEN = re.compile(r"[^\W_@]+(?:[-@/][^\W_@]+)*[@]?|@[^\W_@]+", re.UNICODE)
 
 
 # --------------------------------------------------------------------------
@@ -133,7 +136,7 @@ def looks_avar(token: str) -> bool:
 
 
 def palochka_capital_candidates(token: str):
-    """Yield variants with a capital Г/Л/Т/А/Ш read as a palochka."""
+    """Yield variants with a capital in PALOCHKA_CAPITALS read as a palochka."""
     for i, ch in enumerate(token):
         if i > 0 and ch in PALOCHKA_CAPITALS and token[i - 1].lower() in PALOCHKA_BASES:
             prev = token[i - 1]
@@ -149,15 +152,51 @@ def palochka_capital_candidates(token: str):
 # Russian text in the same book keeps its `ё` -- there the letter is real.
 YO = str.maketrans("ёЁ", "еЕ")
 
-# Candidate substitutions that are plausible for this corpus but not safe on
-# their own, so each is applied only when it yields a word the lexicon knows.
-#   ль/лъ   the two are near-identical in print, and only лъ is Avar
-#   4/6/0/3 digits set in place of the vowel they resemble
-#   д/б     a final `о` picked up the descender of the line below
-BOOK_VARIANTS = (
-    ("ль", "лъ"), ("Ль", "Лъ"),
-    ("4", "а"), ("4", "ч"), ("6", "б"), ("0", "о"), ("3", "з"),
+# Candidate substitutions: plausible for this corpus but not safe on their own,
+# so a rewrite is kept only when it yields a word the lexicon knows.
+#
+# Mined rather than guessed: each unresolved Avar token in the guide was
+# aligned against its nearest lexicon neighbour and the character-level edits
+# aggregated (see the `report` mode). Only recurring, explicable edits are
+# listed; one-off alignments and edits confined to page numbers were dropped.
+#
+#   ь <-> ъ    near-identical in print, and the pair is phonemic in Avar
+#              (лъикӏ vs льикӏ, халкъ vs халкь) -- so both directions
+#   й -> и     stressed и, its acute read as the и-breve
+#   4 6 0 3 2  digits set in place of the letter they resemble
+#   6 -> е/о   мегӏ6р, кӏод6
+#   д б -> о   a final о that picked up the descender of the line below
+#   21 2 -> гӏ the гӏ ligature, which no Russian model has
+#   е -> а     unstressed а reduced in print
+BOOK_SUBS = (
+    ("ь", "ъ"), ("ъ", "ь"),
+    ("й", "и"),
+    ("4", "а"), ("4", "ч"), ("4", "гӏа"),
+    ("6", "б"), ("6", "е"), ("6", "о"),
+    ("0", "о"), ("3", "з"),
+    # The гӏ ligature, which no Russian model has. Longest forms first so
+    # `2Геч` resolves as гӏеч rather than leaving a stray Г behind.
+    ("2г", "гӏ"), ("21", "гӏ"), ("2", "гӏ"),
+    ("и/г", "цӏ"), ("/г", "ӏ"),
+    ("@", "а"), ("@", "ӏи"), ("@", "ӏ"),
+    ("д", "о"), ("д", "а"), ("б", "о"),
+    ("е", "а"),
 )
+
+# Deliberately NOT included: у -> а. It is attested, but avar.db is missing
+# `ункъго` (four), and the rule rewrote it to `анкьго` (seven) -- a valid word,
+# so nothing downstream could catch it. Turning one numeral into another is a
+# worse outcome than leaving OCR noise in place, and a textbook is full of
+# numerals. Any rule that can map one well-formed Avar word onto a different
+# well-formed Avar word needs this much scrutiny before being added.
+
+# How many of the above may be combined in one token. Real damage clusters:
+# `льйкӏаб` needs ь->ъ *and* й->и, which no single substitution reaches. Three
+# keeps the search small while covering every multi-edit case observed.
+MAX_SUBS = 3
+# Ceiling on rewrites generated per token, so a token full of substitutable
+# letters cannot blow up the search.
+MAX_CANDIDATES = 400
 
 
 def strip_avar_yo(token: str) -> str:
@@ -165,27 +204,55 @@ def strip_avar_yo(token: str) -> str:
     return token.translate(YO) if looks_avar(token) else token
 
 
+def strip_at(token: str) -> str:
+    """Fall back to `@` -> а when no lexicon-confirmed reading was found.
+
+    `@` is never a letter, so leaving it is always wrong -- but the word it
+    damaged is not always in the lexicon to confirm a repair (`Йорчӏ@ми` is a
+    greeting, absent from avar.db). а is the commonest reading by a wide
+    margin, so it is the right guess when there is nothing to check against.
+    """
+    return token.replace("@", "а") if "@" in token else token
+
+
+def _apply_once(token: str):
+    """Yield every single-occurrence application of one BOOK_SUBS rule."""
+    lowered = token.lower()
+    for src, dst in BOOK_SUBS:
+        start = 0
+        while True:
+            i = lowered.find(src, start)
+            if i < 0:
+                break
+            start = i + 1
+            replacement = dst.upper() if token[i].isupper() else dst
+            yield token[:i] + replacement + token[i + len(src):]
+
+
 def book_variants(token: str):
-    """Yield lexicon-checkable repairs for this corpus's systematic misreads."""
+    """Yield lexicon-checkable repairs for this corpus's systematic misreads.
+
+    Breadth-first over BOOK_SUBS, shortest rewrites first, so that damage
+    needing several edits at once is reachable: `льйкӏаб` needs ь->ъ *and*
+    й->и, and neither alone produces a word. Fewer substitutions means a more
+    likely reading, so the first lexicon hit wins.
+    """
     seen = {token}
-
-    def push(t: str):
-        if t not in seen:
-            seen.add(t)
-            return t
-
-    for src, dst in BOOK_VARIANTS:
-        if src in token:
-            cand = push(token.replace(src, dst))
-            if cand:
+    frontier = [token]
+    produced = 0
+    for _ in range(MAX_SUBS):
+        nxt = []
+        for word in frontier:
+            for cand in _apply_once(word):
+                if cand in seen:
+                    continue
+                seen.add(cand)
+                nxt.append(cand)
                 yield cand
-    # A trailing `о` is routinely read as `д` or `б` (къолд, ункъбялда).
-    for wrong in "дб":
-        for i, ch in enumerate(token):
-            if ch == wrong:
-                cand = push(token[:i] + "о" + token[i + 1:])
-                if cand:
-                    yield cand
+                produced += 1
+                if produced >= MAX_CANDIDATES:
+                    return
+        frontier = nxt
 
 
 def is_suspicious(token: str) -> bool:
@@ -195,7 +262,7 @@ def is_suspicious(token: str) -> bool:
     word that merely happens to be missing from the lexicon must be left alone.
     """
     return bool(LATIN.search(token)) or any(ch.isdigit() for ch in token) \
-        or strip_accents(token) != token
+        or "@" in token or "/" in token or strip_accents(token) != token
 
 
 def deromanize(token: str) -> str:
@@ -373,10 +440,34 @@ def fix(text: str, lex: Lexicon, use_fuzzy: bool = False,
             if lex.knows(cleaned):
                 return _match_case(token, cleaned)
 
+        # Guarded for the same reason tier 3 is. Rules like е->а and ъ->ь are
+        # phonemic in Avar but destructive in Russian, and the Russian wordlist
+        # is too thin to distinguish a rare word from a broken one -- so a
+        # clean, merely-unlisted Russian word must never be rewritten. Only
+        # tokens that are recognisably Avar, or that carry visible damage
+        # (a digit, `@`, `/`, Latin, a stray accent), are eligible.
+        #
+        # A token with neither property still gets a narrower chance: OCR can
+        # strip every Avar marker off a word (лъабазарго -> льдбазарго, which
+        # reads as plain Russian). There the rewrite must land on a form that
+        # is *both* in the Avar wordlist and Avar-looking, so the only way a
+        # Russian word can be touched is by turning into a real Avar word --
+        # which needs two independent coincidences rather than one.
+        marked = looks_avar(cleaned) or is_suspicious(cleaned)
         for candidate in book_variants(cleaned):
-            if lex.knows(candidate):
-                stats["fixed_book_variant"] += 1
+            if marked:
+                if lex.knows(candidate):
+                    stats["fixed_book_variant"] += 1
+                    return _match_case(token, candidate)
+            elif looks_avar(candidate) and normalize(candidate) in lex.avar:
+                stats["fixed_book_variant_avar_only"] += 1
                 return _match_case(token, candidate)
+
+        # Nothing confirmed, but `@` cannot stay -- guess the commonest reading.
+        deat = strip_at(cleaned)
+        if deat != cleaned:
+            stats["fixed_at_fallback"] += 1
+            cleaned = deat
 
         # An Avar-looking token absent from 76k forms is very likely broken,
         # so damage evidence is not additionally required for those.
