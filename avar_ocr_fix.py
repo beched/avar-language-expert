@@ -76,6 +76,10 @@ HOMOGLYPH = {
 
 CYRILLIC = re.compile(r"[а-яёА-ЯЁӀӏ]")
 LATIN = re.compile(r"[a-zA-Z]")
+
+# Lines the extractor writes itself (headings, blockquote, source note). These
+# are English on purpose and must survive the Latin-homoglyph pass.
+MARKDOWN_CHROME = re.compile(r"\s*(#{1,6}\s|>|\*Source:|---\s*$)")
 # A token is a run of letters/digits/palochka-lookalikes plus internal hyphens.
 TOKEN = re.compile(r"[^\W_]+(?:-[^\W_]+)*", re.UNICODE)
 
@@ -135,6 +139,53 @@ def palochka_capital_candidates(token: str):
             prev = token[i - 1]
             mark = PALOCHKA_LOWER if prev.islower() else PALOCHKA
             yield token[:i] + mark + token[i + 1:]
+
+
+# Scanned books mark stress on the vowel, and the OCR reads that mark as a
+# diaeresis: е́ comes back as `ё`. Avar orthography has no `ё` at all, so in a
+# token carrying Avar-only orthography this is unconditionally an error.
+# Measured on the Avar Language Guide: 494 of 494 such tokens were absent from
+# the 78k-form lexicon, and `ё`->`е` alone resolved 53% of them.
+# Russian text in the same book keeps its `ё` -- there the letter is real.
+YO = str.maketrans("ёЁ", "еЕ")
+
+# Candidate substitutions that are plausible for this corpus but not safe on
+# their own, so each is applied only when it yields a word the lexicon knows.
+#   ль/лъ   the two are near-identical in print, and only лъ is Avar
+#   4/6/0/3 digits set in place of the vowel they resemble
+#   д/б     a final `о` picked up the descender of the line below
+BOOK_VARIANTS = (
+    ("ль", "лъ"), ("Ль", "Лъ"),
+    ("4", "а"), ("4", "ч"), ("6", "б"), ("0", "о"), ("3", "з"),
+)
+
+
+def strip_avar_yo(token: str) -> str:
+    """Undo stressed-е-read-as-ё, but only inside Avar-looking tokens."""
+    return token.translate(YO) if looks_avar(token) else token
+
+
+def book_variants(token: str):
+    """Yield lexicon-checkable repairs for this corpus's systematic misreads."""
+    seen = {token}
+
+    def push(t: str):
+        if t not in seen:
+            seen.add(t)
+            return t
+
+    for src, dst in BOOK_VARIANTS:
+        if src in token:
+            cand = push(token.replace(src, dst))
+            if cand:
+                yield cand
+    # A trailing `о` is routinely read as `д` or `б` (къолд, ункъбялда).
+    for wrong in "дб":
+        for i, ch in enumerate(token):
+            if ch == wrong:
+                cand = push(token[:i] + "о" + token[i + 1:])
+                if cand:
+                    yield cand
 
 
 def is_suspicious(token: str) -> bool:
@@ -313,6 +364,20 @@ def fix(text: str, lex: Lexicon, use_fuzzy: bool = False,
                 stats["fixed_palochka_capital"] += 1
                 return _match_case(token, candidate)
 
+        # `ё` inside Avar orthography is always wrong, so this one is applied
+        # unconditionally -- but if it alone yields a known word, stop here.
+        deyo = strip_avar_yo(cleaned)
+        if deyo != cleaned:
+            stats["fixed_avar_yo"] += 1
+            cleaned = deyo
+            if lex.knows(cleaned):
+                return _match_case(token, cleaned)
+
+        for candidate in book_variants(cleaned):
+            if lex.knows(candidate):
+                stats["fixed_book_variant"] += 1
+                return _match_case(token, candidate)
+
         # An Avar-looking token absent from 76k forms is very likely broken,
         # so damage evidence is not additionally required for those.
         if use_fuzzy and looks_avar(cleaned):
@@ -327,7 +392,12 @@ def fix(text: str, lex: Lexicon, use_fuzzy: bool = False,
         # Keep tier-1 repairs even when unverified; they are safe on their own.
         return _match_case(token, cleaned) if cleaned != token else token
 
-    return TOKEN.sub(repl, fix_palochka_text(text)), stats
+    # Markdown structure is ours, not the scanner's: `## Page 40` is English by
+    # construction, and deromanizing it produced `## Раде 40`.
+    out = []
+    for line in fix_palochka_text(text).split("\n"):
+        out.append(line if MARKDOWN_CHROME.match(line) else TOKEN.sub(repl, line))
+    return "\n".join(out), stats
 
 
 def _match_case(original: str, replacement: str) -> str:

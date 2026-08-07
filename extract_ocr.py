@@ -15,6 +15,7 @@ from pdf2image import convert_from_path
 from collections import Counter
 from pathlib import Path
 
+import ocr_ensemble
 from avar_ocr_fix import Lexicon, fix
 
 # Configuration
@@ -53,8 +54,13 @@ def extract_with_ocr(pdf_path: Path, output_path: Path, description: str) -> int
         for i, image in enumerate(images):
             print(f"  OCR page {i + 1}/{total_pages}...", end="\r")
             
-            # Run OCR
+            # Tesseract owns the layout: --psm 3 recovers the tables and
+            # columns, and a sweep of psm/oem found nothing better.
             text = pytesseract.image_to_string(image, lang=LANG)
+            # Apple Vision reads Russian prose more accurately but destroys
+            # page structure, so it only votes on individual words.
+            text, swaps = ocr_ensemble.refine(text, image, lexicon)
+            stats["vision_swaps"] += swaps
             # No OCR engine has the palochka Ӏ in its alphabet, so raw output
             # contains zero correct Avar words. Repair it before writing.
             text, page_stats = fix(text, lexicon)
