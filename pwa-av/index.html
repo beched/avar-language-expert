@@ -991,17 +991,18 @@ function offlineHTML(){
     el.innerHTML='<div class="card tight" style="border-color:#2c6e49;padding:7px 12px"><small>'+
       '✅ Готово к офлайну — сохранены все '+OFF.total+' '+plF(OFF.total)+', работает в режиме полёта.</small></div>';return;}
   if(OFF.state==='busy'){el.innerHTML='<div class="card tight"><small>⬇️ <b>Сохраняю приложение для офлайна…</b><br>'+
-    'Это занимает до минуты при первом запуске. Не закрывай приложение — как появится ✅, всё готово.</small></div>';return;}
+    'Это занимает до минуты при первом запуске. Не закрывай приложение — как появится ✅, всё готово.</small>'+diagLine()+'</div>';return;}
+  if(OFF.state==='working'&&!OFF.total){ OFF={state:'busy'}; }
   if(OFF.state==='working'){
     el.innerHTML='<div class="card tight"><small>⬇️ Сохраняю для офлайна… '+OFF.cached+' / '+OFF.total+
-      '<br>Не закрывай приложение, пока не появится ✅.</small></div>';return;}
+      '<br>Не закрывай приложение, пока не появится ✅.</small>'+diagLine()+'</div>';return;}
   if(OFF.state==='partial'){
     el.innerHTML='<div class="card tight" style="border-color:#8a6d1f"><small>⚠️ <b>Офлайн готов не полностью:</b> '+
       OFF.cached+' / '+OFF.total+' файлов. Подключись к интернету и нажми кнопку.</small>'+
-      '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Скачать для офлайна</button></div></div>';return;}
+      '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Скачать для офлайна</button></div>'+diagLine()+'</div>';return;}
   el.innerHTML='<div class="card tight" style="border-color:#8a3a3a"><small>⚠️ <b>Офлайн-режим не активен.</b> '+
     'Открой приложение при работающем интернете, подожди 10–20 секунд и нажми «Повторить». Если не помогло — закрой приложение полностью и открой снова.</small>'+
-    '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Повторить</button></div></div>';
+    '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Повторить</button></div>'+diagLine()+'</div>';
 }
 function applyStatus(st){
   if(!st){OFF={state:'none'};}
@@ -1009,6 +1010,24 @@ function applyStatus(st){
   else{OFF={state:'partial',cached:st.cached,total:st.total};}
   offlineHTML();
 }
+var DIAG='';
+async function diag(){
+  const d=[];
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    d.push('sw:'+(!reg?'none':(reg.installing?'installing':reg.waiting?'waiting':reg.active?'active':'?')));
+    d.push('ctrl:'+(navigator.serviceWorker.controller?'y':'n'));
+  }catch(e){ d.push('sw:err'); }
+  try{
+    const ks=await caches.keys(); let n=0;
+    if(ks.length){ const c=await caches.open(ks[0]); n=(await c.keys()).length; }
+    d.push('cache:'+(ks.length?ks[0].replace('avar-course-','')+'/'+n:'none'));
+  }catch(e){ d.push('cache:err'); }
+  d.push(navigator.onLine?'online':'offline');
+  DIAG=d.join(' · ');
+  return DIAG;
+}
+function diagLine(){ return DIAG?'<div style="opacity:.55;font-size:.72rem;margin-top:6px">'+DIAG+'</div>':''; }
 async function swBusy(){
   try{ const reg=await navigator.serviceWorker.getRegistration();
        return {reg:reg, busy: !!(reg&&(reg.installing||reg.waiting))}; }
@@ -1025,7 +1044,7 @@ async function offlineCheck(budgetMs){
     else{
       const pr=await cacheProbe();
       if(pr&&pr.cached>=pr.total&&pr.total>0){ applyStatus(pr); return; }
-      const b=await swBusy(); const waited=Date.now()-t0;
+      const b=await swBusy(); const waited=Date.now()-t0; await diag();
       if(pr&&pr.cached>0){ OFF={state:'working',cached:pr.cached,total:pr.total}; offlineHTML(); }
       else if(b.busy){ OFF={state:'busy'}; offlineHTML(); }
       else if(!b.reg&&waited>20000){ applyStatus(null); return; }
@@ -1039,10 +1058,15 @@ async function offlineCheck(budgetMs){
 async function offlineRepair(){
   if(!navigator.onLine){OFF={state:'partial',cached:OFF.cached||0,total:OFF.total||0};offlineHTML();
     alert('Нет интернета. Подключись к сети и повтори — тогда всё скачается для офлайна.');return;}
-  OFF={state:'working',cached:OFF.cached||0,total:OFF.total||0}; offlineHTML();
-  const st=await swAsk({type:'repair'},120000);
-  if(st){applyStatus(st);return;}
-  // No worker reachable: re-register, then fall back to probing the cache.
+  OFF={state:'busy'}; await diag(); offlineHTML();
+  // An older worker has no message handler and would never answer, so push it
+  // out of the way first rather than waiting on a silent one.
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg){ if(reg.waiting) reg.waiting.postMessage('skipWaiting'); reg.update().catch(()=>{}); }
+  }catch(e){}
+  const st=await swAsk({type:'repair'},20000);
+  if(st){ applyStatus(st); if(st.cached>=st.total) return; }
   try{ await navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}); }catch(e){}
   await offlineCheck(180000);
 }

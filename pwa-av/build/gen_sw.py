@@ -36,15 +36,40 @@ const OFFLINE_URL = './index.html';
 
 // Cache each entry on its own: one bad response must not abort the install and
 // leave the user with nothing cached.
-async function precache() {
+// Safari has historically rejected the 'reload' cache mode in a Request init.
+// If that throws, every file would fail and the cache would stay empty -- so
+// always fall back to a plain fetch.
+async function fetchFresh(url) {
+  try { return await fetch(new Request(url, { cache: 'reload' })); }
+  catch (e1) {
+    try { return await fetch(url, { cache: 'no-store' }); }
+    catch (e2) { return await fetch(url); }
+  }
+}
+async function precacheOnce() {
   const c = await caches.open(CACHE);
-  const bust = { cache: 'reload' };
+  const failed = [];
   await Promise.all(PRECACHE.map(async url => {
     try {
-      const res = await fetch(new Request(url, bust));
+      const res = await fetchFresh(url);
       if (res && (res.ok || res.type === 'opaque')) await c.put(url, res);
-    } catch (e) { /* keep going; the fetch handler will fill it in later */ }
+      else failed.push(url);
+    } catch (e) { failed.push(url); }
   }));
+  return failed;
+}
+async function precache() {
+  let failed = await precacheOnce();
+  // One retry, serially, for whatever did not make it the first time.
+  if (failed.length) {
+    const c = await caches.open(CACHE);
+    for (const url of failed) {
+      try {
+        const res = await fetch(url);
+        if (res && (res.ok || res.type === 'opaque')) await c.put(url, res);
+      } catch (e) { /* reported via status(); the user can retry */ }
+    }
+  }
 }
 
 self.addEventListener('install', e => {
