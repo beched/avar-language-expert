@@ -520,8 +520,10 @@ function renderHome(){
      ${weak.map(w=>`<div class="lesson" onclick="drillJump('${esc(w.k)}','${esc(w.label)}')">
        <div class="badge">🎯</div><div class="lt"><b>${esc(w.label)}</b><small>ошибок: ${w.miss}</small></div><div class="arrow">↻</div></div>`).join('')}`:''}
    ${installHTML()}
+   <div id="offlineCard"></div>
    <div class="card tight"><small>Карточек изучено: <b>${learned}</b> · слов в курсе: <b>${allVocab().length}</b></small>
      <div style="margin-top:8px"><button class="btn ghost sm" onclick="resetAll()">Сбросить прогресс</button></div></div>`;
+  if(typeof offlineHTML==='function') offlineHTML();
 }
 function drillJump(key,label){ // re-drill a weak key: infer gen from lesson id
   const les=DATA.lessons.find(l=>('L:'+l.id)===key);
@@ -930,8 +932,55 @@ function pickGender(g){S.gender=g;S.onboarded=true;save();applyToggles();const o
 
 /* ---------------- boot ---------------- */
 applyToggles();renderAll();go(S.tab);maybeOnboard();
+/* ---- OFFLINE READINESS ----
+   On iOS a Home-Screen web app gets its own storage container: whatever Safari
+   cached is not visible here, so the app must precache once inside the installed
+   app itself. This card tells the learner whether that has actually happened. */
+function swAsk(msg,ms){
+  return new Promise(res=>{
+    const sw=navigator.serviceWorker&&navigator.serviceWorker.controller;
+    if(!sw){res(null);return;}
+    const ch=new MessageChannel(); let done=false;
+    const t=setTimeout(()=>{if(!done){done=true;res(null);}},ms||10000);
+    ch.port1.onmessage=e=>{if(!done){done=true;clearTimeout(t);res(e.data);}};
+    try{sw.postMessage(msg,[ch.port2]);}catch(e){clearTimeout(t);res(null);}
+  });
+}
+var OFF;
+function plF(n){const a=n%10,b=n%100;return (a===1&&b!==11)?'файл':(a>=2&&a<=4&&(b<12||b>14))?'файла':'файлов';}
+function offlineHTML(){
+  const el=$('offlineCard'); if(!el) return;
+  if(!OFF) OFF={state:'check'};
+  if(OFF.state==='check'){el.innerHTML='<div class="card tight"><small>⏳ Проверяю офлайн-готовность…</small></div>';return;}
+  if(OFF.state==='ready'){
+    el.innerHTML='<div class="card tight" style="border-color:#2c6e49"><small>✅ <b>Готово к офлайну.</b> Все '+OFF.total+
+      ' '+plF(OFF.total)+' сохранены — приложение полностью работает без интернета и в режиме полёта.</small></div>';return;}
+  if(OFF.state==='working'){
+    el.innerHTML='<div class="card tight"><small>⬇️ Сохраняю для офлайна… '+OFF.cached+' / '+OFF.total+
+      '<br>Не закрывай приложение, пока не появится ✅.</small></div>';return;}
+  if(OFF.state==='partial'){
+    el.innerHTML='<div class="card tight" style="border-color:#8a6d1f"><small>⚠️ <b>Офлайн готов не полностью:</b> '+
+      OFF.cached+' / '+OFF.total+' файлов. Подключись к интернету и нажми кнопку.</small>'+
+      '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Скачать для офлайна</button></div></div>';return;}
+  el.innerHTML='<div class="card tight" style="border-color:#8a3a3a"><small>⚠️ <b>Офлайн-режим не активен.</b> '+
+    'Открой приложение при работающем интернете и подожди пару секунд, затем обнови эту страницу.</small>'+
+    '<div style="margin-top:8px"><button class="btn sm" onclick="offlineRepair()">Повторить</button></div></div>';
+}
+function applyStatus(st){
+  if(!st){OFF={state:'none'};}
+  else if(st.cached>=st.total){OFF={state:'ready',cached:st.cached,total:st.total};}
+  else{OFF={state:'partial',cached:st.cached,total:st.total};}
+  offlineHTML();
+}
+async function offlineCheck(){ applyStatus(await swAsk({type:'status'},8000)); }
+async function offlineRepair(){
+  if(!navigator.onLine){OFF={state:'partial',cached:OFF.cached||0,total:OFF.total||0};offlineHTML();
+    alert('Нет интернета. Подключись к сети и повтори — тогда всё скачается для офлайна.');return;}
+  OFF={state:'working',cached:OFF.cached||0,total:OFF.total||0}; offlineHTML();
+  applyStatus(await swAsk({type:'repair'},120000));
+}
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist();}).catch(()=>{});}
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{const hadCtrl=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing||!hadCtrl)return;refreshing=true;location.reload();});if(reg.waiting)reg.waiting.postMessage('skipWaiting');reg.addEventListener('updatefound',()=>{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});}).catch(()=>{});});}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{const hadCtrl=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing||!hadCtrl)return;refreshing=true;location.reload();});if(reg.waiting)reg.waiting.postMessage('skipWaiting');reg.addEventListener('updatefound',()=>{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});}).catch(()=>{});navigator.serviceWorker.ready.then(()=>{const go=()=>offlineCheck();if(navigator.serviceWorker.controller)go();else navigator.serviceWorker.addEventListener('controllerchange',go);}).catch(()=>{});});}else{OFF={state:'none'};}
 </script>
 </body>
 </html>

@@ -60,8 +60,28 @@ self.addEventListener('activate', e => {
   })());
 });
 
+// Report/repair precache state so the app can show whether it is genuinely
+// ready for offline use, and top itself up if anything is missing.
+async function status() {
+  const c = await caches.open(CACHE);
+  const have = new Set((await c.keys()).map(r => new URL(r.url).pathname));
+  const missing = PRECACHE.filter(u => !have.has(new URL(u, self.location).pathname));
+  return { total: PRECACHE.length, cached: PRECACHE.length - missing.length, missing, version: CACHE };
+}
+
 self.addEventListener('message', e => {
-  if (e.data === 'skipWaiting') self.skipWaiting();
+  const d = e.data;
+  if (d === 'skipWaiting') { self.skipWaiting(); return; }
+  if (d && d.type === 'status' && e.ports && e.ports[0]) {
+    const port = e.ports[0];
+    e.waitUntil(status().then(s => port.postMessage(s),
+                              () => port.postMessage({ total: PRECACHE.length, cached: 0, missing: PRECACHE, error: true })));
+  }
+  if (d && d.type === 'repair' && e.ports && e.ports[0]) {
+    const port = e.ports[0];
+    e.waitUntil(precache().then(status).then(s => port.postMessage(s),
+                                             () => port.postMessage({ total: PRECACHE.length, cached: 0, error: true })));
+  }
 });
 
 async function cacheFirst(request, fallbackUrl) {
