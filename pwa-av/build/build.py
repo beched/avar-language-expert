@@ -1347,6 +1347,8 @@ print(f"built ../index.html : {len(LESSONS)} lessons, {nw} lesson-words, "
       f"{sum(len(t['words']) for t in LEX)} vocab, {len(AUDIO)} audio, "
       f"{len(DATA['alphabet'])+len(DATA['special'])} letters")
 
-# Regenerate the service worker so its precache hash matches the new index.html.
+# Regenerate the service worker so its precache hash matches the new index.html,
+# then copy the app to the repo root, which is what GitHub Pages serves.
 import subprocess, sys
 subprocess.run([sys.executable, P("gen_sw.py")], check=True)
+subprocess.run([sys.executable, P("..", "deploy.py")], check=True)

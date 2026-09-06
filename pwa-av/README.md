@@ -3,7 +3,9 @@
 A practical, kids-friendly crash course in **Avar (авар мацӀ)** for Russian speakers,
 modeled on the Emirati-Arabic PWA in `../../pwa`. Single-file, offline, installable.
 
-**Live:** https://beched.github.io/avar-language-expert/ (served from the `gh-pages` branch).
+**Live:** https://beched.github.io/avar-language-expert/ (Pages = `main` / root; `deploy.py`
+copies the built app to the repo root, which keeps that URL — and therefore existing
+Home-Screen installs and the service-worker scope — unchanged).
 
 ## What it teaches
 15 lessons, A0→A2, with no gaps — every word is introduced in a lesson before it is drilled:
@@ -47,7 +49,7 @@ python3 verify_lex.py      # cross-check every Avar word against avar.db
 python3 fetch_audio.py     # download + transcode IPA samples (API)  \
 python3 fetch_curl.py      #   ... or curl md5 paths for the rest      } -> audio/*.mp3
 python3 make_icons.py      # generate app icons
-python3 build.py           # inline DATA -> ../index.html, then regenerate ../sw.js
+python3 build.py           # DATA -> ../index.html, regenerate ../sw.js, copy app to repo root
 node   test_run.js         # headless smoke test (views, generators, drills, cards, ref)
 ```
 `index.html` is generated — edit `index.template.html` (UI/engine) and `build.py` (content),
