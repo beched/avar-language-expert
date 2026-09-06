@@ -930,7 +930,8 @@ function pickGender(g){S.gender=g;S.onboarded=true;save();applyToggles();const o
 
 /* ---------------- boot ---------------- */
 applyToggles();renderAll();go(S.tab);maybeOnboard();
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist();}).catch(()=>{});}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{const hadCtrl=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing||!hadCtrl)return;refreshing=true;location.reload();});if(reg.waiting)reg.waiting.postMessage('skipWaiting');reg.addEventListener('updatefound',()=>{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});}).catch(()=>{});});}
 </script>
 </body>
 </html>

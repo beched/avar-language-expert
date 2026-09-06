@@ -1346,3 +1346,7 @@ nw = sum(len(l.get("words",[])) for l in LESSONS)
 print(f"built ../index.html : {len(LESSONS)} lessons, {nw} lesson-words, "
       f"{sum(len(t['words']) for t in LEX)} vocab, {len(AUDIO)} audio, "
       f"{len(DATA['alphabet'])+len(DATA['special'])} letters")
+
+# Regenerate the service worker so its precache hash matches the new index.html.
+import subprocess, sys
+subprocess.run([sys.executable, P("gen_sw.py")], check=True)
