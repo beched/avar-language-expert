@@ -164,6 +164,7 @@ summary{cursor:pointer;padding:8px 0;font-weight:600}
 </div></header>
 
 <main class="wrap">
+  <div id="offlineCard"></div>
   <section class="view on" id="v-home"></section>
   <section class="view" id="v-lessons"></section>
   <section class="view" id="v-drill"></section>
@@ -520,7 +521,6 @@ function renderHome(){
      ${weak.map(w=>`<div class="lesson" onclick="drillJump('${esc(w.k)}','${esc(w.label)}')">
        <div class="badge">🎯</div><div class="lt"><b>${esc(w.label)}</b><small>ошибок: ${w.miss}</small></div><div class="arrow">↻</div></div>`).join('')}`:''}
    ${installHTML()}
-   <div id="offlineCard"></div>
    <div class="card tight"><small>Карточек изучено: <b>${learned}</b> · слов в курсе: <b>${allVocab().length}</b></small>
      <div style="margin-top:8px"><button class="btn ghost sm" onclick="resetAll()">Сбросить прогресс</button></div></div>`;
   if(typeof offlineHTML==='function') offlineHTML();
@@ -986,10 +986,10 @@ function plF(n){const a=n%10,b=n%100;return (a===1&&b!==11)?'файл':(a>=2&&a<
 function offlineHTML(){
   const el=$('offlineCard'); if(!el) return;
   if(!OFF) OFF={state:'check'};
-  if(OFF.state==='check'){el.innerHTML='<div class="card tight"><small>⏳ Проверяю офлайн-готовность…</small></div>';return;}
+  if(OFF.state==='check'){el.innerHTML='<div class="card tight" style="padding:7px 12px"><small>⏳ Проверяю офлайн-готовность…</small></div>';return;}
   if(OFF.state==='ready'){
-    el.innerHTML='<div class="card tight" style="border-color:#2c6e49"><small>✅ <b>Готово к офлайну.</b> Все '+OFF.total+
-      ' '+plF(OFF.total)+' сохранены — приложение полностью работает без интернета и в режиме полёта.</small></div>';return;}
+    el.innerHTML='<div class="card tight" style="border-color:#2c6e49;padding:7px 12px"><small>'+
+      '✅ Готово к офлайну — сохранены все '+OFF.total+' '+plF(OFF.total)+', работает в режиме полёта.</small></div>';return;}
   if(OFF.state==='busy'){el.innerHTML='<div class="card tight"><small>⬇️ <b>Сохраняю приложение для офлайна…</b><br>'+
     'Это занимает до минуты при первом запуске. Не закрывай приложение — как появится ✅, всё готово.</small></div>';return;}
   if(OFF.state==='working'){
@@ -1047,7 +1047,7 @@ async function offlineRepair(){
   await offlineCheck(180000);
 }
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist();}).catch(()=>{});}
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{const hadCtrl=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing||!hadCtrl)return;refreshing=true;location.reload();});if(reg.waiting)reg.waiting.postMessage('skipWaiting');reg.addEventListener('updatefound',()=>{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});}).catch(()=>{});offlineCheck();navigator.serviceWorker.addEventListener('controllerchange',()=>offlineCheck(4));});}else{OFF={state:'none'};}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{const hadCtrl=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing||!hadCtrl)return;refreshing=true;location.reload();});if(reg.waiting)reg.waiting.postMessage('skipWaiting');reg.addEventListener('updatefound',()=>{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});}).catch(()=>{});offlineCheck();navigator.serviceWorker.addEventListener('controllerchange',()=>offlineCheck(4));});}else{OFF={state:'none'};offlineHTML();}
 </script>
 </body>
 </html>
